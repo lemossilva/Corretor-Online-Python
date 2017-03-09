@@ -74,13 +74,13 @@ route("/status",[=](const vector<string>&) {
 });
 
 route("/contests",[=](const vector<string>& args) {
-  if (args.size() < 2) { json(Contest::page()); return; }
+  if (args.size() < 2) { json(Contest::page(uid())); return; }
   unsigned page, page_size;
   if (!read(args[0],page) || !read(args[1],page_size)) {
-    json(Contest::page());
+    json(Contest::page(uid()));
     return;
   }
-  json(Contest::page(page,page_size));
+  json(Contest::page(uid(), page,page_size));
 });
 
 route("/problems",[=](const vector<string>& args) {
@@ -136,11 +136,11 @@ route("/contest/attempts",[=](const vector<string>& args) {
   json(Contest::get_attempts(cid,uid()));
 },false,false,1);
 
-route("/contest/scoreboard",[=](const vector<string>& args) {
-  int cid;
-  if (!read(args[0],cid)) { not_found(); return; }
-  json(Contest::scoreboard(cid,uid()));
-},false,false,1);
+// route("/contest/scoreboard",[=](const vector<string>& args) {
+//   int cid;
+//   if (!read(args[0],cid)) { not_found(); return; }
+//   json(Contest::scoreboard(cid,uid()));
+// },false,false,1);
 
 route("/problem",[=](const vector<string>& args) {
   int probid;

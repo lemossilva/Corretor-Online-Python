@@ -32,7 +32,6 @@ bool change_password(const int id, const std::string& oldpassword, const std::st
   user["password"] = newpassword;
   users.update(id, user);
 
-  // Database::update();
   return true;
 }
 

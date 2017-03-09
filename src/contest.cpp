@@ -29,6 +29,24 @@ static JSON list_problems(const JSON& contest, int user) {
   return ans;
 }
 
+time_t inner_begin(const JSON& start) {
+  int Y = start("year");
+  int M = start("month");
+  int D = start("day");
+  int h = start("hour");
+  int m = start("minute");
+  time_t tmp = ::time(nullptr);
+  tm ti;
+  localtime_r(&tmp,&ti);
+  ti.tm_year = Y - 1900;
+  ti.tm_mon  = M - 1;
+  ti.tm_mday = D;
+  ti.tm_hour = h;
+  ti.tm_min  = m;
+  ti.tm_sec  = 0;
+  return mktime(&ti);
+}
+
 namespace Contest {
 
 void fix() {
@@ -64,10 +82,14 @@ void fix() {
   });
 }
 
-Time time(const JSON& contest) {
+Time time(const JSON& contest, int user) {
   Time ans;
-  ans.begin = begin(contest);
-  ans.end = end(contest);
+
+  ans.begin = inner_begin(contest("start",User::get(user)["turma"].str()));
+  ans.end = ans.begin + 60*int(contest("duration"));
+
+  // ans.begin = begin(contest);
+  // ans.end = end(contest);
   ans.freeze = freeze(contest);
   ans.blind = blind(contest);
   return ans;
@@ -126,7 +148,8 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
     attempt["privileged"].settrue();
     return true;
   }
-  auto t = time(contest);
+  // auto t = time(contest);
+  auto t = time(contest,attempt["user"]);
   time_t when = attempt["when"];
   if (t.begin <= when && when < t.end) {
     attempt["contest"] = cid;
@@ -188,53 +211,22 @@ JSON get_attempts(int id, int user) {
   return ans;
 }
 
-JSON scoreboard(int id, int user) {
-  JSON contest = get(id,user);
-  if (!contest) return contest;
-  JSON ans(map<string,JSON>{
-    {"status"   , contest("finished") ? "final" : ""},
-    {"attempts" , JSON()},
-    {"colors"   , vector<JSON>{}}
-  });
-  // get problem info
-  JSON probs = list_problems(contest,user);
-  map<int,int> idx;
-  for (auto& prob : probs.arr()) {
-    idx[prob["id"]] = ans["colors"].size();
-    ans["colors"].push_back(prob["color"]);
-  }
-  // get attempts
-  ans["attempts"] = Attempt::page(user,0,0,id,true);
-  // set info
-  auto& arr = ans["attempts"].arr();
-  for (auto& att : arr) {
-    att["problem"] = idx[att["problem"]["id"]];
-    att["user"] = User::name(att["user"]);
-  }
-  // no freeze/blind filtering needed?
-  if (
-    contest("finished") ||
-    (int(contest["freeze"]) == 0 && int(contest["blind"]) == 0) ||
-    isjudge(user,contest)
-  ) return ans;
-  // freeze/blind filtering
-  int freeze = int(contest["duration"])-int(contest["freeze"]);
-  int blind = int(contest["duration"])-int(contest["blind"]);
-  freeze = min(freeze,blind);
-  time_t frz = begin(contest) + 60*freeze;
-  if (frz <= ::time(nullptr)) ans["status"] = "frozen";
-  ans["freeze"] = freeze;
-  JSON tmp(vector<JSON>{});
-  for (auto& att : arr) if (int(att["contest_time"]) < freeze) {
-    tmp.push_back(move(att));
-  }
-  ans["attempts"] = move(tmp);
-  return ans;
-}
-
-JSON page(unsigned p, unsigned ps) {
+JSON page(int user, unsigned p, unsigned ps) {
+  if(!user) return JSON("null");
+  string turma = User::get(user)["turma"];
   DB(contests);
-  return contests.retrieve_page(p,ps);
+  JSON ans(vector<JSON>{});
+  contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
+    JSON tmp = contest.second;
+    if (!tmp["start"].obj().count(turma)) return Database::null();
+    tmp["id"] = contest.first;
+    JSON tmp2 = tmp["start"][turma];
+    tmp["start"] = tmp2;
+    ans.push_back(move(tmp));
+    return Database::null();
+  });
+
+  return ans;
 }
 
 } // namespace Contest

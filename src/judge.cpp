@@ -196,4 +196,14 @@ void push(int attid) {
   }
 }
 
+void push_problem(int probid) {
+  DB(attempts);
+  vector<int> atts;
+  attempts.retrieve([&](const Database::Document& doc) {
+    if (doc.second("problem") == probid) atts.push_back(doc.first);
+    return Database::null();
+  });
+  for (int id : atts) push(id);
+}
+
 } // namespace Judge
