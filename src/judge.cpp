@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 
+#include <fstream>
+#include <algorithm>
 #include "judge.hpp"
 
 #include "database.hpp"
@@ -73,6 +75,91 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   return AC;
 }
 
+bool output_is_correct(const string &outputfile, const string &sourcefile){
+  string output;
+  ifstream outputstream(outputfile);
+  ifstream sourcestream(outputfile);
+
+  if(!outputstream.is_open()) return false;
+  if(!sourcestream.is_open()) return false;
+
+  string word;
+  while(outputstream >> word){
+
+    auto it = copy_if(word.begin(), word.end(), word.begin(), [](char c){
+      switch(c){
+        case '\t': case '\r': case '\n': case  '.':
+        case  ',': case  ':': case  ';': case  ' ':
+          return false;
+      }
+      return true;
+    });
+
+    word.resize(distance(word.begin(), it));
+
+    transform(word.begin(), word.end(), back_inserter(output), [](char c){
+      return tolower(c);
+    });
+  }
+
+  outputstream.close();
+
+  int last = 0;
+  vector<int> preffix_function;
+  bool answer = true;
+  while(sourcestream >> word){
+
+    auto it = copy_if(word.begin(), word.end(), word.begin(), [](char c){
+      switch(c){
+        case '\t': case '\r': case '\n': case  '.':
+        case  ',': case  ':': case  ';': case  ' ':
+          return false;
+      }
+      return true;
+    });
+
+    word.resize(distance(word.begin(), it));
+
+    transform(word.begin(), word.end(), word.begin(), [](char c){
+      return tolower(c);
+    });
+
+    preffix_function.assign(word.size()+1, 0);
+
+    for(int i = 2; i <= word.size(); i++){
+      int j = preffix_function[i-1];
+      while(j > 0 && word[j] != word[i-1])
+        j = preffix_function[j];
+      if(word[j] == word[i-1]) j++;
+      preffix_function[i] = j;
+    }
+
+    int state = 0;
+
+    bool reach_final_state = false;
+
+    while(last < output.size()){
+      while(state > 0 && output[last] != word[state])
+        state = preffix_function[state];
+      if(output[last] == word[state])
+        state++;
+
+      last++;
+      if(state == word.size()){
+        reach_final_state = true;
+        break;
+      }
+    }
+
+    if(!reach_final_state){
+      answer = false;
+      break;
+    }
+  }
+  sourcestream.close();
+  return answer;
+}
+
 static void judge(int attid) {
   // load stuff
   DB(attempts);
@@ -132,10 +219,7 @@ static void judge(int attid) {
     
     // diff
     string sfn = dn+"/output/"+fn;
-    int status = system("diff -wB %s %s",ofn.c_str(),sfn.c_str());
-    if (WEXITSTATUS(status)) { verd = WA; break; }
-    status = system("diff %s %s",ofn.c_str(),sfn.c_str());
-    if (WEXITSTATUS(status)) { verd = PE; break; }
+    if(!output_is_correct(ofn, sfn)){ verd = WA; break; }
     
     // remove correct output
     remove(ofn.c_str());

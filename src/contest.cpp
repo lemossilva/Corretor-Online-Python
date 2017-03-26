@@ -19,7 +19,13 @@ static bool isjudge(int user, const JSON& contest) {
 }
 
 static JSON list_problems(const JSON& contest, int user) {
-  JSON probs = contest("problems");
+  JSON probs;
+  if(contest("qnt_provas")){
+    int prova = (user % (contest("qnt_provas") + 1)) + 1;
+    probs = contest("problems")("prova")(prova);
+  }
+  else probs = contest("problems");
+
   JSON ans(vector<JSON>{}), tmp;
   for (int pid : probs.arr()) {
     tmp = Problem::get_short(pid,user);
@@ -214,11 +220,15 @@ JSON get_attempts(int id, int user) {
 JSON page(int user, unsigned p, unsigned ps) {
   if(!user) return JSON("null");
   string turma = User::get(user)["turma"];
+  // int tok = (user % (MAX_PROVAS+1)) + 1;
   DB(contests);
   JSON ans(vector<JSON>{});
   contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
     JSON tmp = contest.second;
     if (!tmp["start"].obj().count(turma)) return Database::null();
+    // if(tmp["tok"]){
+    //   if(tmp["tok"] != tok) return Database::null();
+    // }
     tmp["id"] = contest.first;
     JSON tmp2 = tmp["start"][turma];
     tmp["start"] = tmp2;
