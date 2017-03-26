@@ -23,7 +23,6 @@
       "autojudge": true,
       "color": "#00ff00",
       "enabled": true,
-      "contest": 1,
       "languages": {
         ".java": {
           "memlimit": 150000,

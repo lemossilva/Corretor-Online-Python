@@ -78,7 +78,7 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
 bool output_is_correct(const string &outputfile, const string &sourcefile){
   string output;
   ifstream outputstream(outputfile);
-  ifstream sourcestream(outputfile);
+  ifstream sourcestream(sourcefile);
 
   if(!outputstream.is_open()) return false;
   if(!sourcestream.is_open()) return false;

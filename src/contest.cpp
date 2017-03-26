@@ -220,15 +220,12 @@ JSON get_attempts(int id, int user) {
 JSON page(int user, unsigned p, unsigned ps) {
   if(!user) return JSON("null");
   string turma = User::get(user)["turma"];
-  // int tok = (user % (MAX_PROVAS+1)) + 1;
+
   DB(contests);
   JSON ans(vector<JSON>{});
   contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
     JSON tmp = contest.second;
     if (!tmp["start"].obj().count(turma)) return Database::null();
-    // if(tmp["tok"]){
-    //   if(tmp["tok"] != tok) return Database::null();
-    // }
     tmp["id"] = contest.first;
     JSON tmp2 = tmp["start"][turma];
     tmp["start"] = tmp2;
