@@ -97,9 +97,7 @@ bool output_is_correct(const string &outputfile, const string &sourcefile){
 
     word.resize(distance(word.begin(), it));
 
-    transform(word.begin(), word.end(), back_inserter(output), [](char c){
-      return tolower(c);
-    });
+    transform(word.begin(), word.end(), back_inserter(output), ::tolower);
   }
 
   outputstream.close();
@@ -120,9 +118,7 @@ bool output_is_correct(const string &outputfile, const string &sourcefile){
 
     word.resize(distance(word.begin(), it));
 
-    transform(word.begin(), word.end(), word.begin(), [](char c){
-      return tolower(c);
-    });
+    transform(word.begin(), word.end(), word.begin(), ::tolower);
 
     preffix_function.assign(word.size()+1, 0);
 
