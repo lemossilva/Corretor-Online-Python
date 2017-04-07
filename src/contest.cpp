@@ -154,7 +154,6 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
     attempt["privileged"].settrue();
     return true;
   }
-  // auto t = time(contest);
   auto t = time(contest,attempt["user"]);
   time_t when = attempt["when"];
   if (t.begin <= when && when < t.end) {
@@ -170,7 +169,8 @@ JSON get(int id, int user) {
   JSON ans;
   if (
     !contests.retrieve(id,ans) ||
-    (!isjudge(user,ans) && ::time(nullptr) < begin(ans))
+    (!isjudge(user,ans) && ::time(nullptr) < begin(ans)) ||
+    (!isjudge(user,ans) && ::time(nullptr) > end(ans))
   ) {
     return JSON::null();
   }
