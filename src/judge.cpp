@@ -193,6 +193,7 @@ static void judge(int attid) {
     att("privileged") || settings("autojudge") ? "judged": "waiting"
   );
   int verd = AC;
+  pair<int, int> solved_problems = make_pair(0, 0);
   
   // for each input file
   string dn = "problems/"+prob;
@@ -205,17 +206,19 @@ static void judge(int attid) {
     struct stat stt;
     stat(ifn.c_str(),&stt);
     if (!S_ISREG(stt.st_mode)) continue;
+    solved_problems.second++;
     
     // run
     string ofn = path+"/output/"+fn;
-    verd = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
+    int tmp_verd = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
     Mtms = max(Mtms,mtms);
     MmkB = max(MmkB,mmkB);
-    if (verd != AC) break;
+    if (tmp_verd != AC){ verd = tmp_verd; continue; }
     
     // diff
     string sfn = dn+"/output/"+fn;
-    if(!output_is_correct(ofn, sfn)){ verd = WA; break; }
+    if(!output_is_correct(ofn, sfn)){ verd = WA; continue; }
+    solved_problems.first++;
     
     // remove correct output
     remove(ofn.c_str());
@@ -226,6 +229,9 @@ static void judge(int attid) {
   att["verdict"] = verdict_tos(verd);
   att["time"] = move(tostr(mtms));
   att["memory"] = move(tostr(mmkB));
+  att["solved_tests"] = move(tostr(solved_problems.first));
+  att["total_tests"] = move(tostr(solved_problems.second));
+
   attempts.update(attid,move(att));
 }
 

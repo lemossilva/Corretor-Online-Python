@@ -633,17 +633,25 @@ function balloon(color) {
 }
 function verdict(att) {
   if (att.status != "judged") att.verdict = att.status;
+
+  var percetage = "";
+
+  if("solved_tests" in att && "total_tests" in att){
+    if(att.total_tests > 0)
+      percetage = " (solved " + 100*att.solved_tests/att.total_tests + "%)";
+  }
+
   switch (att.verdict) {
-    case        "AC": return "Accepted";
-    case        "CE": return "Compile Error";
-    case       "RTE": return "Runtime Error";
-    case       "TLE": return "Time Limit Exceeded";
-    case       "MLE": return "Memory Limit Exceeded";
-    case        "WA": return "Wrong Answer";
-    case        "PE": return "Presentation Error";
-    case   "waiting": return "Not Answered Yet";
-    case     "blind": return "Blind Attempt";
-    case "cantjudge": return "Not Answered Yet";
+    case        "AC": return "Accepted" + percetage;
+    case        "CE": return "Compile Error" + percetage;
+    case       "RTE": return "Runtime Error" + percetage;
+    case       "TLE": return "Time Limit Exceeded" + percetage;
+    case       "MLE": return "Memory Limit Exceeded" + percetage;
+    case        "WA": return "Wrong Answer" + percetage;
+    case        "PE": return "Presentation Error" + percetage;
+    case   "waiting": return "Not Answered Yet" + percetage;
+    case     "blind": return "Blind Attempt" + percetage;
+    case "cantjudge": return "Not Answered Yet" + percetage;
     case     "first": return balloon(att.problem.color);
   }
   return "";
