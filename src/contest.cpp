@@ -96,8 +96,8 @@ Time time(const JSON& contest, int user) {
 
   // ans.begin = begin(contest);
   // ans.end = end(contest);
-  ans.freeze = freeze(contest);
-  ans.blind = blind(contest);
+  // ans.freeze = freeze(contest);
+  // ans.blind = blind(contest);
   return ans;
 }
 
@@ -226,10 +226,12 @@ JSON page(int user, unsigned p, unsigned ps) {
   contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
     JSON tmp = contest.second;
     if (!tmp["start"].obj().count(turma)) return Database::null();
-    tmp["id"] = contest.first;
-    JSON tmp2 = tmp["start"][turma];
-    tmp["start"] = tmp2;
-    ans.push_back(move(tmp));
+    if(::time(nullptr) <= end(tmp)){
+      tmp["id"] = contest.first;
+      JSON tmp2 = tmp["start"][turma];
+      tmp["start"] = tmp2;
+      ans.push_back(move(tmp));
+    }
     return Database::null();
   });
 
