@@ -230,11 +230,7 @@ JSON page(int user, unsigned p, unsigned ps) {
     tmp["id"] = contest.first;
     JSON tmp2 = tmp["start"][turma];
     tmp["start"] = tmp2;
-<<<<<<< HEAD
     if(::time(nullptr) < end(tmp)) ans.push_back(move(tmp));
-=======
-    ans.push_back(move(tmp));
->>>>>>> 575968b202909c26c48ed0cee7031d4af844ea6d
     return Database::null();
   });
 
