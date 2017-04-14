@@ -21,8 +21,8 @@ static bool isjudge(int user, const JSON& contest) {
 static JSON list_problems(const JSON& contest, int user) {
   JSON probs;
   if(contest("qnt_provas")){
-    int prova = (user % (contest("qnt_provas") + 1)) + 1;
-    probs = contest("problems")("prova")(prova);
+    int prova = (user % (int(contest("qnt_provas")) + 1)) + 1;
+    probs = contest("prova", prova);
   }
   else probs = contest("problems");
 
@@ -91,13 +91,9 @@ void fix() {
 Time time(const JSON& contest, int user) {
   Time ans;
 
-  ans.begin = inner_begin(contest("start",User::get(user)["turma"].str()));
+  ans.begin = inner_begin(contest("start", User::get(user)["turma"].str()));
   ans.end = ans.begin + 60*int(contest("duration"));
 
-  // ans.begin = begin(contest);
-  // ans.end = end(contest);
-  // ans.freeze = freeze(contest);
-  // ans.blind = blind(contest);
   return ans;
 }
 
@@ -120,7 +116,7 @@ time_t begin(const JSON& contest) {
 }
 
 time_t end(const JSON& contest) {
-  return begin(contest) + 60*int(contest("duration"));
+  return begin(contest) + 60*time_t(contest("duration"));
 }
 
 time_t freeze(const JSON& contest) {
@@ -139,7 +135,7 @@ bool allow_problem(const JSON& problem, int user) {
   return
     contest("finished") ||
     isjudge(user,contest) ||
-    begin(contest) <= ::time(nullptr)
+    time(contest, user).begin <= ::time(nullptr)
   ;
 }
 
@@ -167,13 +163,18 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
 JSON get(int id, int user) {
   DB(contests);
   JSON ans;
+
+  if(!contests.retrieve(id,ans)) return JSON::null();
+
+  Time tmp = time(ans, user);
+
   if (
-    !contests.retrieve(id,ans) ||
-    (!isjudge(user,ans) && ::time(nullptr) < begin(ans)) ||
-    (!isjudge(user,ans) && ::time(nullptr) > end(ans))
+    (!isjudge(user,ans) && ::time(nullptr) < tmp.begin) ||
+    (!isjudge(user,ans) && ::time(nullptr) >= tmp.end)
   ) {
     return JSON::null();
   }
+
   ans["id"] = id;
   return ans;
 }
@@ -226,12 +227,10 @@ JSON page(int user, unsigned p, unsigned ps) {
   contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
     JSON tmp = contest.second;
     if (!tmp["start"].obj().count(turma)) return Database::null();
-    if(::time(nullptr) <= end(tmp)){
-      tmp["id"] = contest.first;
-      JSON tmp2 = tmp["start"][turma];
-      tmp["start"] = tmp2;
-      ans.push_back(move(tmp));
-    }
+    tmp["id"] = contest.first;
+    JSON tmp2 = tmp["start"][turma];
+    tmp["start"] = tmp2;
+    if(::time(nullptr) < end(tmp)) ans.push_back(move(tmp));
     return Database::null();
   });
 
