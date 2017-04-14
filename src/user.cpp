@@ -63,7 +63,7 @@ JSON profile(int id, int user, unsigned p, unsigned ps) {
     p = 0;
     ps = ans0.size();
   }
-  JSON ans(map<string,JSON>{{"name",tmp["name"]},{"solved",vector<JSON>{}}});
+  JSON ans(map<string,JSON>{{"name",tmp["username"]},{"solved",vector<JSON>{}}});
   if (ans0.size() <= p*ps) return ans;
   auto it = ans0.at(p*ps);
   for (int i = 0; i < ps && it != ans0.end(); i++, it++) {
@@ -98,7 +98,7 @@ JSON page(int user, unsigned p, unsigned ps) {
     auto& us = tmp[i];
     ans.push_back(map<string,JSON>{
       {"id"     , us["id"]},
-      {"name"   , us["name"]},
+      {"name"   , us["username"]},
       {"solved" , info[us["id"]].solved.size()},
       {"tried"  , info[us["id"]].tried.size()}
     });
