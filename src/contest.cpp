@@ -219,7 +219,7 @@ JSON get_attempts(int id, int user) {
 }
 
 JSON page(int user, unsigned p, unsigned ps) {
-  if(!user) return JSON("null");
+  if(!user) return JSON(vector<JSON>{});
   string turma = User::get(user)["turma"];
 
   DB(contests);
