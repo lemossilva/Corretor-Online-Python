@@ -1,6 +1,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
-#include <algorithm>
+
 #include "problem.hpp"
 
 #include "helper.hpp"
