@@ -21,8 +21,8 @@ static bool isjudge(int user, const JSON& contest) {
 static JSON list_problems(const JSON& contest, int user) {
   JSON probs;
   if(contest("qnt_provas")){
-    int prova = (user % (int(contest("qnt_provas")) + 1)) + 1;
-    probs = contest("prova", prova);
+    int prova = (user % int(contest("qnt_provas"))) + 1;
+    probs = contest("prova", tostr(prova));
   }
   else probs = contest("problems");
 
