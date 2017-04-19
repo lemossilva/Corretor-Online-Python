@@ -1,3 +1,4 @@
+      #include <iostream>
 #include <cmath>
 #include <algorithm>
 
@@ -66,7 +67,7 @@ void fix() {
     }
     auto& ps = doc.second["problems"];
     if (!ps.isarr()) {
-      ps = JSON(vector<JSON>{});
+      // ps = JSON(vector<JSON>{});
       return true;
     }
     for (int id : ps.arr()) if (problems.retrieve(id,aux)) {
@@ -82,7 +83,15 @@ void fix() {
       doc.second.erase("contest");
       return true;
     }
-    for (int id : aux["problems"].arr()) if (id == doc.first) return true;
+    if(aux("qnt_provas")){
+      int sz = int(aux("qnt_provas"));
+      for(int i = 1; i <= sz; i++){
+        for(int id : aux["prova"][tostr(i)].arr())
+          if(id == doc.first) return true;
+      }
+    }
+    else if(aux("problems"))
+      for (int id : aux["problems"].arr()) if (id == doc.first) return true;
     doc.second.erase("contest");
     return true;
   });

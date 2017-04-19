@@ -1,6 +1,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
-
+#include <algorithm>
 #include "problem.hpp"
 
 #include "helper.hpp"
@@ -57,6 +57,20 @@ JSON page(int user, unsigned p, unsigned ps) {
     if (p("contest").read(cid)) {
       aux = Contest::get(cid,user);
       if (!aux || !aux("finished")) continue;
+      if(aux("qnt_provas")){
+        if(!user) continue;
+        int prova = (user % int(aux("qnt_provas"))) + 1;
+        JSON probs = aux("prova", tostr(prova));
+        if(!probs.isarr()) continue;
+        bool inside = false;
+        for(int id : probs.arr()){
+          if(id == p("id")){
+            inside = true;
+            break;
+          }
+        }
+        if(!inside) continue;
+      }
     }
     p.erase("languages");
     ans.push_back(move(p));
