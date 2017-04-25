@@ -163,9 +163,6 @@ void rerun_contest(int id){
   DB(attempts);
   JSON tmp = attempts.retrieve(), ans(vector<JSON>{}), aux;
   for (auto& att : tmp.arr()) {
-    int cid;
-    bool hasc = att("contest").read(cid);
-    if (cid != id) continue;
 
     int pid = att["problem"];
     if(!has_prob.count(pid)) continue;
