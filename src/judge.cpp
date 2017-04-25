@@ -70,7 +70,7 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   mtms = us/1000;
   mmkB = r.ru_maxrss;
   if (mtms > tls*1000) return TLE;
-  if (mmkB > mlkB) return MLE;
+  // if (mmkB > mlkB) return MLE;
   if (!WIFEXITED(st) || WEXITSTATUS(st) || WIFSIGNALED(st)) return RTE;
   return AC;
 }

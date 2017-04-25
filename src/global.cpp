@@ -99,13 +99,13 @@ void start() {
     getcwd().c_str()
   );
   printf("pjudge[%s] started.\n",getcwd().c_str());
-  if (daemon(1,0) < 0) { // fork and redirect IO to /dev/null
-    perror(stringf(
-      "pjudge[%s] could not start in background",
-      getcwd().c_str()
-    ).c_str());
-    _exit(-1);
-  }
+  // if (daemon(1,0) < 0) { // fork and redirect IO to /dev/null
+  //   perror(stringf(
+  //     "pjudge[%s] could not start in background",
+  //     getcwd().c_str()
+  //   ).c_str());
+  //   _exit(-1);
+  // }
   pjudge pj; // RAII
   signal(SIGTERM,term); // Global::shutdown();
   signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
@@ -141,6 +141,39 @@ void rerun_attempt(int id) {
     getcwd().c_str(),
     id
   );
+}
+
+void rerun_contest(int id){
+  DB(contests);
+  JSON contest = contests.retrieve(id);
+  JSON probs;
+  map<int, bool> has_prob;
+  if(contest("qnt_provas")){
+    for(int prova = 1; prova <= int(contest("qnt_provas")); prova++){
+      probs = contest("prova", tostr(prova));
+      for(int k : probs.arr())
+        has_prob[k] = true;
+    }
+  }
+  else{
+    probs = contest("problems");
+    for(int k : probs.arr()) has_prob[k] = true;
+  }
+
+  DB(attempts);
+  JSON tmp = attempts.retrieve(), ans(vector<JSON>{}), aux;
+  for (auto& att : tmp.arr()) {
+    int cid;
+    bool hasc = att("contest").read(cid);
+    if (cid != id) continue;
+
+    int pid = att["problem"];
+    if(!has_prob.count(pid)) continue;
+
+    int aid = att["id"];
+
+    Global::rerun_attempt(aid);
+  }
 }
 
 void shutdown() {
