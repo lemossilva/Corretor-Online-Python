@@ -99,7 +99,8 @@ void fix() {
 Time time(const JSON& contest, int user) {
   Time ans;
 
-  if(user) ans.begin = inner_begin(contest("start", User::get(user)["turma"].str()));
+  string turma = User::get(user)["turma"].str();
+  if(user && contest("start", turma)) ans.begin = inner_begin(contest("start", turma));
   else ans.begin = 0;
   ans.end = ans.begin + 60*int(contest("duration"));
 
