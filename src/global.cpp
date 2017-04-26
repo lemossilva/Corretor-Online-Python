@@ -99,13 +99,13 @@ void start() {
     getcwd().c_str()
   );
   printf("pjudge[%s] started.\n",getcwd().c_str());
-  // if (daemon(1,0) < 0) { // fork and redirect IO to /dev/null
-  //   perror(stringf(
-  //     "pjudge[%s] could not start in background",
-  //     getcwd().c_str()
-  //   ).c_str());
-  //   _exit(-1);
-  // }
+  if (daemon(1,0) < 0) { // fork and redirect IO to /dev/null
+    perror(stringf(
+      "pjudge[%s] could not start in background",
+      getcwd().c_str()
+    ).c_str());
+    _exit(-1);
+  }
   pjudge pj; // RAII
   signal(SIGTERM,term); // Global::shutdown();
   signal(SIGPIPE,SIG_IGN); // ignore broken pipes (tcp shit)
