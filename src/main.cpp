@@ -25,8 +25,8 @@ static void usage() {
     "  stop\n"
     "  restart (precisely a stop followed by a start)\n"
     "  rerun-att <attempt id>\n"
-    "  rerun-contest <contest id> (* reruns ALL attempts)\n"
-    exe,exe
+    "  rerun-contest <contest id> (* reruns ALL attempts)\n",
+    exe
   );
   exit(0);
 }
