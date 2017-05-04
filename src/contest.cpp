@@ -107,7 +107,7 @@ Time time(const JSON& contest, int user) {
   ans.end = ans.begin + 60*int(contest("duration"));
 
   if(user){
-    if(User::get(user)("especial")) ans.end += 60;
+    if(User::get(user)("especial") && contest("qnt_provas")) ans.end += 60;
   }
 
   return ans;
@@ -238,7 +238,7 @@ JSON page(int user, unsigned p, unsigned ps) {
     tmp["id"] = contest.first;
     JSON tmp2 = tmp["start"][turma];
     tmp["start"] = tmp2;
-    if(User::get(user)("especial")) tmp["duration"] = 60 + int(tmp["duration"]);
+    if(User::get(user)("especial") && tmp("qnt_provas")) tmp["duration"] = 60 + int(tmp["duration"]);
     if(::time(nullptr) < end(tmp)) ans.push_back(move(tmp));
     return Database::null();
   });
