@@ -99,13 +99,16 @@ void fix() {
 Time time(const JSON& contest, int user) {
   Time ans;
 
+  ans.begin = 0;
   if(user){
     string turma = User::get(user)["turma"].str();
     if(contest("start", turma)) ans.begin = inner_begin(contest("start", turma));
-    else ans.begin = 0;
   }
-  else ans.begin = 0;
   ans.end = ans.begin + 60*int(contest("duration"));
+
+  if(user){
+    if(User::get(user)("especial")) ans.end += 60;
+  }
 
   return ans;
 }
@@ -130,14 +133,6 @@ time_t begin(const JSON& contest) {
 
 time_t end(const JSON& contest) {
   return begin(contest) + 60*time_t(contest("duration"));
-}
-
-time_t freeze(const JSON& contest) {
-  return end(contest) - 60*int(contest("freeze"));
-}
-
-time_t blind(const JSON& contest) {
-  return end(contest) - 60*int(contest("blind"));
 }
 
 bool allow_problem(const JSON& problem, int user) {
@@ -243,6 +238,7 @@ JSON page(int user, unsigned p, unsigned ps) {
     tmp["id"] = contest.first;
     JSON tmp2 = tmp["start"][turma];
     tmp["start"] = tmp2;
+    if(User::get(user)("especial")) tmp["duration"] = 60 + int(tmp["duration"]);
     if(::time(nullptr) < end(tmp)) ans.push_back(move(tmp));
     return Database::null();
   });
