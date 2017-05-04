@@ -113,6 +113,10 @@ route("/users",[=](const vector<string>& args) {
   json(User::page(uid(),page,page_size));
 });
 
+route("/notas",[=](const vector<string>& args) {
+  json(Contest::notas());
+});
+
 route("/logout",[=](const vector<string>&) {
   session(nullptr);
   location("/");

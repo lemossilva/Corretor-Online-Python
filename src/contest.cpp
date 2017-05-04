@@ -250,4 +250,101 @@ JSON page(int user, unsigned p, unsigned ps) {
   return ans;
 }
 
+JSON notas(){
+  DB(attempts);
+  DB(contests);
+  DB(users);
+  JSON atts = attempts.retrieve();
+  JSON conts = contests.retrieve();
+  JSON user = users.retrieve();
+
+  JSON user_problem;
+  for(JSON att : atts.arr()){
+    string prob = att("problem");
+    string user = att("user");
+    if(!user_problem(user)) user_problem[user] = JSON();
+
+    if(!user_problem(user, prob)){
+      user_problem[user][prob] = JSON();
+      user_problem[user][prob]["num"] = 0LL;
+      user_problem[user][prob]["den"] = 1LL;
+    }
+    att.erase("ip");
+    long long tmpnum = 0, tmpden = 1;
+    if(att("verdict") == AC) tmpnum = tmpden = 1;
+    else if(att("solved_tests")){
+      tmpnum = att("solved_tests");
+      tmpden = att("total_tests");
+    }
+    long long num = user_problem(user, prob, "num");
+    long long den = user_problem(user, prob, "den");
+    if(tmpnum * den > num * tmpden){ // tmpnum / tmpden > num / den
+      user_problem[user][prob]["num"] = tmpnum;
+      user_problem[user][prob]["den"] = tmpden;
+    }
+  }
+
+  JSON ans = JSON(), ansprovas = JSON();
+
+  for(JSON &us : user.arr()){
+    int uid = us("id");
+    string username = us("username");
+
+    string uids = tostr(uid);
+    string turma = us("turma");
+    if(!ans(turma)) ans[turma] = JSON();
+    if(!ans(turma, username)) ans[turma][username] = JSON();
+    if(!ansprovas(turma)) ansprovas[turma] = JSON();
+    if(!ansprovas(turma, username)) ansprovas[turma][username] = JSON();
+    
+    if(!user_problem(uids)) user_problem[uids] = JSON();
+    for(JSON contest : conts.arr()){
+      JSON probs;
+      bool is_prova = false;
+      if(contest("qnt_provas")){
+        is_prova = true;
+        int prova = (uid % int(contest("qnt_provas"))) + 1;
+        probs = contest("prova", tostr(prova));
+      }
+      else probs = contest("problems");
+
+      long long num = 0, den = 1, sz = 0;
+
+      for(int pid : probs.arr()){
+        string pids = tostr(pid);
+        if(user_problem(uids, pids)){
+          long long tmpnum = user_problem(uids, pids, "num");
+          long long tmpden = user_problem(uids, pids, "den");
+          num = num * tmpden + tmpden * den;
+          den = den * tmpden;
+          long long g = gcd(num, den);
+          if(g) num /= g, den /= g;
+        }
+      }
+      den *= (long long)probs.arr().size();
+      long long g = gcd(num, den);
+      if(g) num /= g, den /= g;
+      string cid = contest("id");
+      if(!is_prova){
+        if(!ans(turma, username, cid)) ans[turma][username][cid] = JSON();
+
+        ans[turma][username][cid] = JSON();
+        ans[turma][username][cid]["name"] = contest("name");
+        ans[turma][username][cid]["num"] = num;
+        ans[turma][username][cid]["den"] = den;
+      }
+      else{
+        if(!ansprovas(turma, username, cid)) ansprovas[turma][username][cid] = JSON();
+
+        ansprovas[turma][username][cid] = JSON();
+        ansprovas[turma][username][cid]["name"] = contest("name");
+        ansprovas[turma][username][cid]["num"] = num;
+        ansprovas[turma][username][cid]["den"] = den;        
+      }
+    }
+  }
+
+  return JSON(vector<JSON>{ans, ansprovas});
+}
+
 } // namespace Contest

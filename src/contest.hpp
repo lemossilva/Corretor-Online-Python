@@ -24,6 +24,7 @@ JSON get_problems(int id, int user);
 JSON get_attempts(int id, int user);
 JSON scoreboard(int id, int user);
 JSON page(int user = 0, unsigned page = 0, unsigned page_size = 0);
+JSON notas();
 
 } // namespace Contest
 
