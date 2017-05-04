@@ -267,7 +267,7 @@ JSON notas(){
     }
     att.erase("ip");
     long long tmpnum = 0, tmpden = 1;
-    if(att("verdict") == AC) tmpnum = tmpden = 1;
+    if(att("verdict") == "AC") tmpnum = tmpden = 1;
     else if(att("solved_tests")){
       tmpnum = att("solved_tests");
       tmpden = att("total_tests");
@@ -311,7 +311,7 @@ JSON notas(){
         if(user_problem(uids, pids)){
           long long tmpnum = user_problem(uids, pids, "num");
           long long tmpden = user_problem(uids, pids, "den");
-          num = num * tmpden + tmpden * den;
+          num = num * tmpden + tmpnum * den;
           den = den * tmpden;
           long long g = gcd(num, den);
           if(g) num /= g, den /= g;
