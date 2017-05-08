@@ -117,6 +117,8 @@ bool output_is_correct(const string &outputfile, const string &sourcefile){
     });
 
     word.resize(distance(word.begin(), it));
+    
+    if(!word.size()) continue;
 
     transform(word.begin(), word.end(), word.begin(), ::tolower);
 
