@@ -31,6 +31,7 @@ function init() {
       ;
       else html +=
         "<li><a href=\"#\" onclick=\"change_pass()\">Change Password</a></li>\n"+
+        "<li><a href=\"#\" onclick=\"tests()\">Admin</a></li>\n"+
         "<li><a href=\"logout\">Logout</a></li>"
       ;
       $(".menu").html(html);
@@ -47,7 +48,8 @@ function contests() {
   $.get("attempts",null,function(atts) {
     setup_solved(atts);
     $.get("contests",null,function(resp) {
-      for (var i = 0; i < resp.length; i++) {
+      
+      for (var i = 0; i < resp.length; i++){
         var obj = resp[i];
         var s = obj.start;
         var tmp = new Date(s.year,s.month-1,s.day,s.hour,s.minute,0,0);
@@ -122,6 +124,23 @@ function change_pass(){
           "<tr>"+
             "<td></td>"+
             "<td><button onclick=\"do_change_pass()\">Send</button></td>";
+          "</tr>"+
+        "</table>"+
+
+  $("#c1").html(str);
+}
+
+function tests(){
+  var str = "";
+
+  str +=
+        "<h4 id=\"response\"></h4>"+
+        "<table>" +
+          "<tr>"+
+            "<td><input id=\"attid\" type=\"text\"></td>\n"+
+          "</tr>"+
+          "<tr>"+
+            "<td><button onclick=\"attempt_cases()\">Send</button></td>";
           "</tr>"+
         "</table>"+
 
@@ -410,6 +429,72 @@ function attempt(id) {
     $.get("contest/"+resp.contest,null,function(resp2) {
       func(resp,resp2.name);
     });
+  });
+}
+
+function attempt_cases() {
+  if (username == "") window.location = "/";
+  var id = $("#attid");
+  if (id.val() == "") return;
+  
+  var func = function(resp) {
+    if(resp == null) return;
+    var html =
+      "<h2>Attempt "+resp.id+"</h2>"+
+      "<table class=\"data\">"+
+        "<tr>"+
+          "<th>Problem</th>"+
+          "<td>"+
+            "<a href=\"#\" onclick=\"problem("+resp.problem.id+")\">"+
+              resp.problem.id+" — "+resp.problem.name+
+            "</a>"+
+          "</td>"+
+        "</tr>"+
+        "<tr><th>When</th><td>"+timestamp(resp.when)+"</td></tr>"+
+        "<tr><th>Language</th><td>"+resp.language+"</td></tr>"+
+        "<tr><th>Verdict</th><td>"+verdict(resp)+"</td></tr>"
+    ;
+    html +=
+      "</table>"
+    ;
+    var did = 0;
+    for(var test in resp.tests){
+      did = 1;
+      html+=
+        "<table class=\"data\">"+
+        "<tr>"+
+          "<th>input</th>"+
+          "<td>"+ resp.tests[test].input + "</td>"+
+        "</tr>"+
+        "<tr>"+
+          "<th>Output do programa</th>"+
+          "<td>"+ resp.tests[test].outrecieved + "</td>"+
+        "</tr>"+
+        "<tr>"+
+          "<th>Output esperado</th>"+
+          "<td>"+ resp.tests[test].outexpected + "</td>"+
+        "</tr>"
+      ;
+    }
+    if(did != 0){
+      html +=
+        "</table>"
+      ;
+    }
+    var tmp = $(content()).html(html);
+
+    if (resp.source == "") return;
+    tmp.append($(
+      "<pre id=\"code\" class=\"prettyprint linenums\">"+
+      "</pre>"
+    ))
+    .find("#code").text(resp.source);
+    PR.prettyPrint();
+  };
+
+  $.get("getcases/"+id.val(), null, function(resp){
+    func(resp);
+    return;
   });
 }
 

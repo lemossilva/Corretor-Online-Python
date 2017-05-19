@@ -177,6 +177,13 @@ route("/user",[=](const vector<string>& args) {
   json(User::profile(id,uid(),page,page_size));
 },false,false,1);
 
+route("/getcases",[=](const vector<string>& args){
+  int att;
+  if (!read(args[0],att)) { not_found(); return; }
+  printf("asd\n");
+  json(Attempt::getcases(uid(), att));
+}, true, false, 1);
+
 // =============================================================================
 // POST
 // =============================================================================

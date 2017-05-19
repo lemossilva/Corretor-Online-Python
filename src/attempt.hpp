@@ -18,7 +18,7 @@ JSON page(
   bool scoreboard = false,
   bool profile = false
 );
-
+JSON getcases(int user, int id);
 } // namespace Attempt
 
 #endif

@@ -6,6 +6,15 @@
 #include "contest.hpp"
 #include "database.hpp"
 #include "judge.hpp"
+#include "user.hpp"
+
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/resource.h>
+
 
 using namespace std;
 
@@ -139,6 +148,72 @@ JSON page(
   unsigned r = (p+1)*ps;
   if (r < a.size()) a.erase(a.begin()+r,a.end());
   a.erase(a.begin(),a.begin()+(p*ps));
+  return ans;
+}
+
+JSON getcases(int user, int id){
+  JSON ans;
+  if(!user) return JSON::null();
+  string tmp = User::get(user)["turma"];
+  if(tmp != "Z") return JSON::null();;
+
+  DB(attempts);
+  if (!attempts.retrieve(id,ans)) return JSON::null();
+  int pid = ans["problem"];
+  JSON prob = Problem::get_short(pid,user);
+  if (!prob) return JSON::null();
+  ans["id"] = id;
+  string ext = ans["language"];
+  ans["language"] = Language::settings(ans)["name"];
+  ans["problem"] = move(map<string,JSON>{
+    {"id"   , pid},
+    {"name" , prob["name"]}
+  });
+  ans["source"] = source("attempts/"+tostr(id)+"/"+tostr(pid)+ext);
+  ans.erase("ip");
+  ans.erase("time");
+  ans.erase("memory");
+
+  if (ans["status"] != "judged") ans.erase("verdict");
+
+  ans["source"] = source("attempts/"+tostr(id)+"/"+tostr(pid)+ext);
+  ans.erase("ip");
+  ans.erase("time");
+  ans.erase("memory");
+
+
+  ans["tests"] = JSON(vector<JSON>());
+  string path = "attempts/"+tostr(id);
+
+// for each input file
+  string dn = "problems/"+tostr(pid);
+  DIR* dir = opendir((dn+"/input").c_str());
+  for (dirent* ent = readdir(dir); ent; ent = readdir(dir)) {
+    string fn = ent->d_name;
+    string ifn = dn+"/input/"+fn;
+    
+    // check if dirent is regular file
+    struct stat stt;
+    stat(ifn.c_str(),&stt);
+    if (!S_ISREG(stt.st_mode)) continue;
+    
+    string ofn = path+"/output/"+fn; //output obtido
+    string sfn = dn+"/output/"+fn; //output esperado
+    string input = source(ifn);
+    string outexpected = source(sfn);
+    string outrecieved = source(ofn);
+
+    if(outrecieved != ""){
+      // ans["tests"].push_back(vector<JSON>{input, outrecieved, outexpected});
+      JSON tmp;
+      tmp["input"] = input;
+      tmp["outrecieved"] = outrecieved;
+      tmp["outexpected"] = outexpected;
+      ans["tests"].push_back(tmp);
+    }
+  }
+  closedir(dir);
+
   return ans;
 }
 
