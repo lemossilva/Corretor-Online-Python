@@ -141,9 +141,8 @@ bool allow_problem(const JSON& problem, int user) {
   DB(contests);
   JSON contest = contests.retrieve(cid);
   return
-    contest("finished") ||
     isjudge(user,contest) ||
-    time(contest, user).begin <= ::time(nullptr)
+    (time(contest, user).begin <= ::time(nullptr) && ::time(nullptr) < time(contest, user).end)
   ;
 }
 
