@@ -394,7 +394,7 @@ function attempt(id) {
         "<tr>"+
           "<th>Problem</th>"+
           "<td>"+
-            "<a href=\"#\" onclick=\"problem("+resp.problem.id+")\">"+
+            "<a href=\"#\">"+
               resp.problem.id+" — "+resp.problem.name+
             "</a>"+
           "</td>"+

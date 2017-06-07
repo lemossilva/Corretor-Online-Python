@@ -180,7 +180,7 @@ route("/user",[=](const vector<string>& args) {
 route("/getcases",[=](const vector<string>& args){
   int att;
   if (!read(args[0],att)) { not_found(); return; }
-  printf("asd\n");
+  // printf("asd\n");
   json(Attempt::getcases(uid(), att));
 }, true, false, 1);
 

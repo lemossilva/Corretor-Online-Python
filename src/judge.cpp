@@ -14,6 +14,7 @@
 #include "database.hpp"
 #include "helper.hpp"
 #include "language.hpp"
+#include "aho.hpp"
 
 using namespace std;
 
@@ -75,36 +76,14 @@ static char run(const string& cmd, int tls, int mlkB, int& mtms, int& mmkB) {
   return AC;
 }
 
-bool output_is_correct(const string &outputfile, const string &sourcefile){
-  string output;
+pair<long long, long long> output_is_correct(const string &outputfile, const string &sourcefile){
+  string output, word;
   ifstream outputstream(outputfile);
   ifstream sourcestream(sourcefile);
 
-  if(!outputstream.is_open()) return false;
-  if(!sourcestream.is_open()) return false;
-
-  string word;
-  while(outputstream >> word){
-
-    auto it = copy_if(word.begin(), word.end(), word.begin(), [](char c){
-      switch(c){
-        case '\t': case '\r': case '\n': case  '.':
-        case  ',': case  ':': case  ';': case  ' ':
-          return false;
-      }
-      return true;
-    });
-
-    word.resize(distance(word.begin(), it));
-
-    transform(word.begin(), word.end(), back_inserter(output), ::tolower);
-  }
-
-  outputstream.close();
-
-  int last = 0;
-  vector<int> preffix_function;
-  bool answer = true;
+  if(!sourcestream.is_open()) return {0, 1};
+  
+  vector<string> v;
   while(sourcestream >> word){
 
     auto it = copy_if(word.begin(), word.end(), word.begin(), [](char c){
@@ -121,41 +100,32 @@ bool output_is_correct(const string &outputfile, const string &sourcefile){
     if(!word.size()) continue;
 
     transform(word.begin(), word.end(), word.begin(), ::tolower);
-
-    preffix_function.assign(word.size()+1, 0);
-
-    for(int i = 2; i <= word.size(); i++){
-      int j = preffix_function[i-1];
-      while(j > 0 && word[j] != word[i-1])
-        j = preffix_function[j];
-      if(word[j] == word[i-1]) j++;
-      preffix_function[i] = j;
-    }
-
-    int state = 0;
-
-    bool reach_final_state = false;
-
-    while(last < output.size()){
-      while(state > 0 && output[last] != word[state])
-        state = preffix_function[state];
-      if(output[last] == word[state])
-        state++;
-
-      last++;
-      if(state == word.size()){
-        reach_final_state = true;
-        break;
-      }
-    }
-
-    if(!reach_final_state){
-      answer = false;
-      break;
-    }
+    v.push_back(word);
   }
   sourcestream.close();
-  return answer;
+
+  if(outputstream.is_open()){
+      while(outputstream >> word){
+
+          auto it = copy_if(word.begin(), word.end(), word.begin(), [](char c){
+                  switch(c){
+                  case '\t': case '\r': case '\n': case  '.':
+                  case  ',': case  ':': case  ';': case  ' ':
+                  return false;
+                  }
+                  return true;
+                  });
+
+          word.resize(distance(word.begin(), it));
+
+          transform(word.begin(), word.end(), back_inserter(output), ::tolower);
+      }
+
+      outputstream.close();
+  }
+
+  Aho a(v);
+  return a.run(output);
 }
 
 static void judge(int attid) {
@@ -195,11 +165,12 @@ static void judge(int attid) {
     att("privileged") || settings("autojudge") ? "judged": "waiting"
   );
   int verd = AC;
-  pair<int, int> solved_problems = make_pair(0, 0);
+  pair<int, int> solved_problems = {0, 1};
   
   // for each input file
   string dn = "problems/"+prob;
   DIR* dir = opendir((dn+"/input").c_str());
+  int cnt = 0;
   for (dirent* ent = readdir(dir); ent; ent = readdir(dir)) {
     string fn = ent->d_name;
     string ifn = dn+"/input/"+fn;
@@ -208,24 +179,37 @@ static void judge(int attid) {
     struct stat stt;
     stat(ifn.c_str(),&stt);
     if (!S_ISREG(stt.st_mode)) continue;
-    solved_problems.second++;
     
     // run
     string ofn = path+"/output/"+fn;
     int tmp_verd = run(cmd+" < "+ifn+" > "+ofn,tls,mlkB,mtms,mmkB);
     Mtms = max(Mtms,mtms);
     MmkB = max(MmkB,mmkB);
-    if (tmp_verd != AC){ verd = tmp_verd; continue; }
+    if (tmp_verd != AC) verd = tmp_verd;
     
     // diff
     string sfn = dn+"/output/"+fn;
-    if(!output_is_correct(ofn, sfn)){ verd = WA; continue; }
-    solved_problems.first++;
+    pair<long long, long long> ret = output_is_correct(ofn, sfn);
+    solved_problems.first = solved_problems.first * ret.second + ret.first * solved_problems.second;
+    solved_problems.second = solved_problems.second * ret.second;
+    long long g = __gcd(solved_problems.first, solved_problems.second);
+    solved_problems.first /= g;
+    solved_problems.second /= g;
+    cnt++;
+
+    if(ret.first != ret.second){
+        if(verd == AC) verd = WA;
+        continue;
+    }
     
     // remove correct output
     remove(ofn.c_str());
   }
   closedir(dir);
+  solved_problems.second *= cnt;
+  long long g = __gcd(solved_problems.first, solved_problems.second);
+  solved_problems.first /= g;
+  solved_problems.second /= g;
   
   // update attempt
   att["verdict"] = verdict_tos(verd);
