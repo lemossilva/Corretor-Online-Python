@@ -83,6 +83,29 @@ route("/contests",[=](const vector<string>& args) {
   json(Contest::page(uid(), page,page_size));
 });
 
+route("/contests/get_all",[=](const vector<string>& args) {
+  json(Contest::get_all(uid()));
+});
+
+route("/get_all_turmas",[=](const vector<string>&args){
+  json(User::get_turmas(uid()));
+});
+
+route("/get_users_of_turma",[=](const vector<string>& args){
+  if(args.size() != 1) return;
+  string turma;
+  if(!read(args[0], turma)) return;
+  json(User::get_of_turma(uid(), turma));
+});
+
+route("/attempt_user_contest",[=](const vector<string>&args){
+  if(args.size() != 2) return;
+  int user, contest;
+  if(!read(args[0], user) || !read(args[1], contest)) return;
+
+  json(Attempt::get_user_contest(uid(), user, contest));
+});
+
 route("/problems",[=](const vector<string>& args) {
   if (args.size() < 2) { json(Problem::page(uid())); return; }
   unsigned page, page_size;
@@ -179,10 +202,14 @@ route("/user",[=](const vector<string>& args) {
 
 route("/getcases",[=](const vector<string>& args){
   int att;
-  if (!read(args[0],att)) { not_found(); return; }
-  // printf("asd\n");
+  if (!read(args[0], att)) { not_found(); return; }
   json(Attempt::getcases(uid(), att));
 }, true, false, 1);
+
+route("/isadmin",[=](const vector<string>& args){
+  if(args.size()){ json(false); return; }
+  json(User::isadmin(uid()));
+});
 
 // =============================================================================
 // POST

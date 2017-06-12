@@ -19,6 +19,7 @@ JSON page(
   bool profile = false
 );
 JSON getcases(int user, int id);
+JSON get_user_contest(int user, int user_id, int contest_id);
 } // namespace Attempt
 
 #endif

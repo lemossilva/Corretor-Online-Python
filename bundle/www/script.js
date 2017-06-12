@@ -29,15 +29,36 @@ function init() {
       if (username == "") html +=
         "<li><a href=\"login.html\">Login</a></li>"
       ;
-      else html +=
-        "<li><a href=\"#\" onclick=\"change_pass()\">Change Password</a></li>\n"+
-        "<li><a href=\"#\" onclick=\"tests()\">Admin</a></li>\n"+
-        "<li><a href=\"logout\">Logout</a></li>"
-      ;
+      else{
+        html +=
+          "<li><a href=\"#\" onclick=\"change_pass()\">Change Password</a></li>\n"
+        ;
+        if(isadmin()){
+          html +=
+            "<li><a href=\"#\" onclick=\"tests()\">Admin quick</a></li>\n"+
+            "<li><a href=\"#\" onclick=\"tests_complete()\">Admin</a></li>\n"
+          ;
+        }
+        html +=
+          "<li><a href=\"logout\">Logout</a></li>"
+        ;
+      }
       $(".menu").html(html);
     },
     async: false
   });
+}
+
+function isadmin(){
+    var ret = false;
+    $.ajax({
+        url: "isadmin",
+        success: function(resp){
+            ret = resp;
+        },
+        async: false
+    });
+    return ret;
 }
 
 function login() {
@@ -140,11 +161,96 @@ function tests(){
             "<td><input id=\"attid\" type=\"text\"></td>\n"+
           "</tr>"+
           "<tr>"+
-            "<td><button onclick=\"attempt_cases()\">Send</button></td>";
+            "<td><button onclick=\"quick_attempt_cases()\">Send</button></td>";
           "</tr>"+
         "</table>"+
 
   $("#c1").html(str);
+}
+
+function tests_complete(){
+
+  $.get("contests/get_all/", null, function(cont){
+    if(!Array.isArray(cont)) return;
+
+    $.get("get_all_turmas/", null, function(turmas){
+      if(!Array.isArray(turmas)) return;
+
+      var str = "";
+      str += "<h4 id=\"response\"></h4>"+
+             "<table>"+
+             "<tr>"+
+             "<td>Contest</td>"+
+             "<td>Turma</td>"+
+             "<td>Aluno</td>"+
+             "<td></td>"+
+             "</tr>"+
+             "<tr>"+
+             "<td>"+
+             "<select id=dropdown_contests>";
+      for(var i in cont){
+        str += "<option value="+cont[i].id+">"+cont[i].name+"</option>";
+      }
+      str += "</select>"+
+             "</td>"+
+             "<td>"+
+             "<select id=dropdown_turmas onchange=set_alunos()>"+
+             "<option value=> </option>";
+      for(var i in turmas){
+        str += "<option value="+turmas[i].name+">"+turmas[i].name+"</option>";
+      }
+      str += "</select>"+
+             "</td>"+
+             "<td>"+
+             "<select id=dropdown_alunos>"+
+             "</select>"+
+             "</td>"+
+             "<td> <button onclick=\"get_attempts_of_aluno()\">Get</button> </td>"+
+             "</tr>"+
+             "</table>"+
+             "<div id=\"c2\"></div>"+
+             "<div id=\"c3\"></div>";
+
+      $("#c1").html(str);
+    });
+  });
+}
+
+function get_attempts_of_aluno(){
+    var user = $("#dropdown_alunos").val();
+    var contest = $("#dropdown_contests").val();
+
+    $.get("/attempt_user_contest/"+user+"/"+contest, null, function(atts){
+        if(!Array.isArray(atts)) return;
+
+        var str = "";
+
+        for(var i in atts)
+          str +=
+            "<button onclick=\"attempt_cases("+atts[i].id+")\">"+atts[i].id+"</button>"
+          ;
+
+        $("#c2").html(str);
+    });
+}
+
+function set_alunos(){
+    var turma = $("#dropdown_turmas").val();
+
+    if(!turma){
+        $("#dropdown_alunos").html("");
+        return;
+    }
+
+    $.get("get_users_of_turma/"+turma, null, function(alunos){
+      if(!Array.isArray(alunos)) return;
+      var str = "";
+      
+      for(var i in alunos)
+        str += "<option value="+alunos[i].id+">"+alunos[i].username+"</option>";
+
+      $("#dropdown_alunos").html(str);
+    });
 }
 
 function attempts() {
@@ -313,6 +419,7 @@ function contest_scoreboard(id) {
 
 function problem(id) {
   $.get("problem/"+id,null,function(resp) {
+    if(!resp) return;
     var languages = resp.languages;
     var limits_table =
       "<table class=\"data\">"+
@@ -394,7 +501,7 @@ function attempt(id) {
         "<tr>"+
           "<th>Problem</th>"+
           "<td>"+
-            "<a href=\"#\">"+
+            "<a href=\"#\" onclick=\"problem("+resp.problem.id+")\">"+
               resp.problem.id+" — "+resp.problem.name+
             "</a>"+
           "</td>"+
@@ -432,13 +539,21 @@ function attempt(id) {
   });
 }
 
-function attempt_cases() {
+function quick_attempt_cases(){
+    var id = $("#attid");
+    if(id != "")
+        attempt_cases(id.val());
+}
+
+function attempt_cases(id) {
   if (username == "") window.location = "/";
-  var id = $("#attid");
-  if (id.val() == "") return;
+  if (id == "") return;
   
   var func = function(resp) {
     if(resp == null) return;
+    if(typeof resp != "object") return;
+    if(resp["problem"] == undefined) return;
+    if(resp["tests"] == undefined) return;
     var html =
       "<h2>Attempt "+resp.id+"</h2>"+
       "<table class=\"data\">"+
@@ -492,7 +607,7 @@ function attempt_cases() {
     PR.prettyPrint();
   };
 
-  $.get("getcases/"+id.val(), null, function(resp){
+  $.get("getcases/"+id, null, function(resp){
     func(resp);
     return;
   });
@@ -615,7 +730,9 @@ function do_change_pass(){
 // =============================================================================
 
 function content() {
-  var ans = $("#c2");
+  var ans = $("#c3");
+  if (ans.length > 0) return "#c3";
+  ans = $("#c2");
   if (ans.length > 0) return "#c2";
   return "#c1";
 }

@@ -41,6 +41,52 @@ JSON get(int id) {
   return users.retrieve(id);
 }
 
+JSON isadmin(int user){
+    if(!user || get(user)["turma"] != "Z") return JSON(false);
+    return JSON(true);
+}
+
+JSON get_turmas(int user){
+    JSON ans(vector<JSON>{});
+
+    if(!user) return ans;
+    if(get(user)["turma"] != "Z") return ans;
+
+    DB(users);
+
+    JSON us = users.retrieve();
+
+    set<string> turmas;
+    JSON tmp;
+    for(JSON u : us.arr()){
+        string s = u["turma"];
+        turmas.insert(s);
+    }
+
+    for(const string& t : turmas){
+        tmp["name"] = t;
+        ans.push_back(tmp);
+    }
+    return ans;
+}
+
+JSON get_of_turma(int user, const string& turma){
+    JSON ans(vector<JSON>{});
+
+    if(!user || get(user)["turma"] != "Z") return ans;
+
+    DB(users);
+
+    JSON us = users.retrieve();
+    for(JSON u : us.arr()) if(turma == u["turma"]) {
+        u.erase("password");
+        u.erase("turma");
+        u.erase("name");
+        ans.push_back(u);
+    }
+    return ans;
+}
+
 string name(int id) {
   JSON tmp = get(id);
   if (!tmp) return "";

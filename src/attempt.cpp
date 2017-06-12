@@ -20,10 +20,12 @@ using namespace std;
 
 static string source(const string& fn) {
   string ans;
-  char* buf = new char[(1<<20)+1];
+  char* buf = new char[(1<<12)+1];
   FILE* fp = fopen(fn.c_str(),"rb");
   if (!fp) return "";
-  for (int sz; (sz = fread(buf,1,1<<20,fp)) > 0; buf[sz] = 0, ans += buf);
+  int sz = fread(buf,1,1<<12,fp);
+  buf[sz] = 0;
+  ans += buf;
   fclose(fp);
   delete[] buf;
   return ans;
@@ -151,17 +153,49 @@ JSON page(
   return ans;
 }
 
+JSON get_user_contest(int user, int user_id, int contest_id){
+    JSON ans(vector<JSON>{});
+    if(!user || User::get(user)["turma"] != "Z") return ans;
+
+    DB(attempts);
+    DB(problems);
+    JSON attempt = attempts.retrieve();
+
+    for(JSON att : attempt.arr()){
+        if(att["user"] != user_id) continue;
+        int pid = att["problem"];
+        JSON tmp;
+        if(!problems.retrieve(pid, tmp)) continue;
+        if(tmp("contest") != contest_id) continue;
+        
+        att.erase("status");
+        att.erase("language");
+        att.erase("memory");
+        att.erase("time");
+        att.erase("when");
+        att.erase("ip");
+        att.erase("problem");
+        att.erase("verdict");
+
+        ans.push_back(att);
+    }
+    return ans;
+}
+
 JSON getcases(int user, int id){
   JSON ans;
   if(!user) return JSON::null();
   string tmp = User::get(user)["turma"];
-  if(tmp != "Z") return JSON::null();;
+  if(tmp != "Z") return JSON::null();
 
   DB(attempts);
+  DB(problems);
   if (!attempts.retrieve(id,ans)) return JSON::null();
   int pid = ans["problem"];
-  JSON prob = Problem::get_short(pid,user);
-  if (!prob) return JSON::null();
+  JSON prob;
+
+  if(!problems.retrieve(pid, prob)) return JSON::null();
+  
   ans["id"] = id;
   string ext = ans["language"];
   ans["language"] = Language::settings(ans)["name"];

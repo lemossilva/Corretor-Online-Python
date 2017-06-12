@@ -245,6 +245,34 @@ JSON page(int user, unsigned p, unsigned ps) {
   return ans;
 }
 
+JSON get_all(int user){
+    JSON ans(vector<JSON>{});
+
+    if(!user) return ans;
+    string turma = User::get(user)["turma"];
+
+    if(turma != "Z") return ans;
+
+    DB(contests);
+
+    JSON conts = contests.retrieve();
+
+    for(JSON c : conts.arr()){
+        c.erase("blind");
+        c.erase("duration");
+        c.erase("freeze");
+        c.erase("problems");
+        c.erase("qnt_prova");
+        c.erase("prova");
+        c.erase("judges");
+        c.erase("finished");
+        c.erase("start");
+        ans.push_back(c);
+    }
+
+    return ans;
+}
+
 JSON notas(){
   DB(attempts);
   DB(contests);
