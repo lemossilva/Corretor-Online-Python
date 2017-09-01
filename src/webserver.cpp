@@ -254,6 +254,28 @@ route("/change_pass",[=](const vector<string>&args){
 
 }, true, true);
 
+
+route("/register_user",[=](const vector<string>&args){
+  if (!session()) { location("/"); return; }
+  auto& data = payload();
+  data.push_back(0);
+  JSON json;
+  json.parse(&data[0]);
+  if (!json("name") || !json("username") || !json("turma") || !json("pass")) {
+    response("Please fill in all fields!");
+    return;
+  }
+
+  if(User::register_user(uid(), json["name"], json["username"], json["turma"], json["pass"])){
+    response("ok");
+  }
+  else{
+    response("Invalid password");
+  }
+
+}, true, true);
+
+
 route("/new_attempt",[=](const vector<string>& args) {
   int probid;
   if (!read(args[0],probid)) { not_found(); return; }

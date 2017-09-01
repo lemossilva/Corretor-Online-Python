@@ -14,6 +14,7 @@ JSON page(int user, unsigned page = 0, unsigned page_size = 0);
 JSON get_turmas(int user);
 JSON get_of_turma(int user, const std::string& turma);
 JSON isadmin(int user);
+bool register_user(const int id, const std::string &name, const std::string& username, const std::string& turma, const std::string& pass);
 } // namespace User
 
 #endif

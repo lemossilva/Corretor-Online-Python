@@ -35,6 +35,19 @@ bool change_password(const int id, const std::string& oldpassword, const std::st
   return true;
 }
 
+bool register_user(const int id, const std::string &name, const std::string& username, const std::string& turma, const std::string& pass){
+    if(isadmin(id).isfalse()) return false;
+    DB(users);
+    JSON user;
+
+    user["name"] = name;
+    user["username"] = username;
+    user["turma"] = turma;
+    user["password"] = pass;
+     
+    users.create(user);
+    return true;
+}
 
 JSON get(int id) {
   DB(users);

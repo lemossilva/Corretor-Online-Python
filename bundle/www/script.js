@@ -36,7 +36,8 @@ function init() {
         if(isadmin()){
           html +=
             "<li><a href=\"#\" onclick=\"tests()\">Admin quick</a></li>\n"+
-            "<li><a href=\"#\" onclick=\"tests_complete()\">Admin</a></li>\n"
+            "<li><a href=\"#\" onclick=\"tests_complete()\">Admin</a></li>\n"+
+            "<li><a href=\"#\" onclick=\"register()\">Cadastrar</a></li>\n"
           ;
         }
         html +=
@@ -59,6 +60,41 @@ function isadmin(){
         async: false
     });
     return ret;
+}
+
+function register(){
+  var str = "";
+
+  str +=
+        "<h4 id=\"response\"></h4>"+
+        "<table>" +
+          "<tr>"+
+            "<td>Nome:</td>\n"+
+            "<td><input id=\"newname\" type=\"text\"></td>\n"+
+          "</tr>"+
+          "<tr>"+
+            "<td>Matricula sem barra:</td>\n"+
+            "<td><input id=\"newusername\" type=\"text\"></td>\n"+
+          "</tr>"+
+          "<tr>"+
+            "<td>Turma:</td>\n"+
+            "<td><input id=\"newturma\" type=\"text\"></td>\n"+
+          "</tr>"+
+          "<tr>"+
+            "<td>Senha:</td>\n"+
+            "<td><input id=\"newpassword\" type=\"text\"></td>\n"+
+          "</tr>"+
+          "<tr>"+
+            "<td>Confirme senha:</td>\n"+
+            "<td><input id=\"newconfirm_password\" type=\"password\"></td>\n"+
+          "</tr>"+
+          "<tr>"+
+            "<td></td>"+
+            "<td><button onclick=\"do_register()\">Cadastrar!</button></td>";
+          "</tr>"+
+        "</table>"+
+
+  $("#c1").html(str);
 }
 
 function login() {
@@ -138,6 +174,7 @@ function change_pass(){
           "<tr>"+
             "<td>Old password:</td>\n"+
             "<td><input id=\"oldpassword\" type=\"password\"></td>\n"+
+          "</tr>"+
           "<tr>"+
             "<td>New password:</td>\n"+
             "<td><input id=\"newpassword\" type=\"password\"></td>\n"+
@@ -724,6 +761,61 @@ function do_change_pass(){
   newpass.val("");
 }
 
+function do_register(){
+    $("#response").html("");
+    if(username == ""){ login(); return; }
+
+    var name = $("#newname");
+    var username = $("#newusername");
+    var turma = $("#newturma");
+    var pass = $("#newpassword");
+    var confpass = $("#newconfirm_password");
+
+    if(name.val() == "" || username.val() == "" || turma.val() == ""
+            || pass.val() == "" || confpass.val() == ""){
+        $("#response").html("Please fill in all fields!");
+        return;
+    }
+
+    if(pass.val() != confpass.val()){
+        pass.val("");
+        confpass.val("");
+        $("#response").html("Passwords do not match!");
+        return; 
+    }
+
+    if(pass.val().length > 40){
+        pass.val("");
+        confpass.val("");
+        $("#response").html("New password is too long! The maximum length is 40.");
+        return;
+    }
+
+    if(!/^[A-Za-z0-9!@#_%$^&*]+$/.test(pass.val())){
+        pass.val("");
+        confpass.val("");
+        $("#response").html("New password has some not allowed characters.<br>\n"+
+                "Allowed characters are alphanumerics and !@#_%$^&*");
+        return;
+    }
+
+    $.post("register_user", JSON.stringify({
+        name: name.val(),
+        username: username.val(),
+        turma: turma.val(),
+        pass: pass.val()
+    }), function(resp){
+        if(resp == "ok") window.location = "/";
+        else $("#response").html(resp);
+            // alert(resp);
+    });
+
+    name.val("");
+    username.val("");
+    turma.val("");
+    pass.val("");
+    confpass.val("");
+}
 
 // =============================================================================
 // generic
