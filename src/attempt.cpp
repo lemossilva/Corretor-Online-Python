@@ -122,8 +122,8 @@ JSON page(
       if (!hasc || cid != contest) continue;
     }
     else if (hasc) {
-      aux = Contest::get(cid,user);
-      if (!aux || !aux("finished")) continue;
+      //aux = Contest::get(cid,user);
+      //if (!aux || !aux("finished")) continue;
     }
     int pid = att["problem"];
     string aux = Problem::get_problem_name(pid);
