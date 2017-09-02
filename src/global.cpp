@@ -168,7 +168,6 @@ void rerun_contest(int id){
     if(!has_prob.count(pid)) continue;
 
     int aid = att["id"];
-
     Global::rerun_attempt(aid);
   }
 }

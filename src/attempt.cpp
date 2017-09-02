@@ -86,14 +86,14 @@ JSON get(int id, int user) {
   int cid;
   if (ans("contest").read(cid) && !Contest::get(cid,user)) return JSON::null();
   int pid = ans["problem"];
-  JSON prob = Problem::get_short(pid,user);
-  if (!prob) return JSON::null();
+  string prob = Problem::get_problem_name(pid);
+  if (prob == "") return JSON::null();
   ans["id"] = id;
   string ext = ans["language"];
   ans["language"] = Language::settings(ans)["name"];
   ans["problem"] = move(map<string,JSON>{
     {"id"   , pid},
-    {"name" , prob["name"]}
+    {"name" , prob}
   });
   ans["source"] = source("attempts/"+tostr(id)+"/"+tostr(pid)+ext);
   ans.erase("ip");
@@ -126,12 +126,12 @@ JSON page(
       if (!aux || !aux("finished")) continue;
     }
     int pid = att["problem"];
-    aux = Problem::get_short(pid,user);
-    if (!aux) continue;
+    string aux = Problem::get_problem_name(pid);
+    if (aux == "") continue;
     att["language"] = Language::settings(att)["name"];
     att["problem"] = move(map<string,JSON>{
       {"id"   , pid},
-      {"name" , aux["name"]}
+      {"name" , aux}
     });
     att.erase("ip");
     att.erase("time");

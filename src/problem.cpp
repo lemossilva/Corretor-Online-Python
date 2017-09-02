@@ -24,6 +24,16 @@ JSON get_short(int id, int user) {
   return ans;
 }
 
+string get_problem_name(int id){
+    DB(problem);
+    JSON p;
+    string ans = "";
+    if(problem.retrieve(id, p)){
+        ans = tostr(p["name"]);
+    }
+    return ans;
+}
+
 JSON get(int id, int user) {
   JSON ans(move(get_short(id,user)));
   if (!ans) return ans;
