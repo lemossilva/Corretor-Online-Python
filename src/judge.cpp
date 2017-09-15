@@ -130,7 +130,7 @@ static void judge(int attid) {
 
     // run
     string ofn = path+"/output/"+fn;
-    int tmp_verd = run(cmd+" < "+ifn+" > "+ofn+" 2>&1",tls,mlkB,mtms,mmkB);
+    int tmp_verd = run(cmd+" < "+ifn+" > "+ofn+" 2>&1 ",tls,mlkB,mtms,mmkB);
     Mtms = max(Mtms,mtms);
     MmkB = max(MmkB,mmkB);
     if(tmp_verd != AC){
