@@ -128,9 +128,9 @@ void stop() {
   Message(STOP).send(key);
   MessageQueue msq;
   PingMessage ping(msq.key());
-  do {
+  do{
     ping.send(key);
-  } while (msq.receive(1).mtype == IMALIVE);
+  }while(msq.receive(1).mtype == IMALIVE);
   printf("pjudge[%s] stopped.\n",getcwd().c_str());
 }
 
