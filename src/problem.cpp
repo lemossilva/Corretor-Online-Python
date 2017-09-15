@@ -2,7 +2,6 @@
 #include <sys/stat.h>
 
 #include "problem.hpp"
-
 #include "helper.hpp"
 #include "contest.hpp"
 #include "language.hpp"
@@ -25,10 +24,10 @@ JSON get_short(int id, int user) {
 }
 
 string get_problem_name(int id){
-    DB(problem);
+    DB(problems);
     JSON p;
     string ans = "";
-    if(problem.retrieve(id, p)){
+    if(problems.retrieve(id, p)){
         ans = tostr(p["name"]);
     }
     return ans;

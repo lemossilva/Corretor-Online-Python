@@ -28,6 +28,7 @@ static string source(const string& fn) {
   ans += buf;
   fclose(fp);
   delete[] buf;
+  if(ans == "") ans = " ";
   return ans;
 }
 
