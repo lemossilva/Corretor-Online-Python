@@ -123,7 +123,12 @@ function contests() {
         {name: "Start", field: function(obj) {
           return new Date(obj.start).toString();
         }},
-        {name: "Duration", field: "duration"},
+        {name: "Duration", field: function(obj){
+          var x = obj.duration;
+          return (Math.floor(x/60/24)).toString() + "d "
+              + (Math.floor(x%(60*24))/60).toString() + "h "
+              + (x % 60).toString() + "min";
+        }},
         {name: "Freeze", field: "freeze"},
         {name: "Blind", field: "blind"}
       ];
