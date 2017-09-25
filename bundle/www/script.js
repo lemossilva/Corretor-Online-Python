@@ -621,15 +621,15 @@ function attempt_cases(id) {
         "<table class=\"data\">"+
         "<tr>"+
           "<th>input</th>"+
-          "<td>"+ resp.tests[test].input + "</td>"+
+          "<td>"+ resp.tests[test].input.replace(/\r?\n/g, "<br>")+ "</td>" +
         "</tr>"+
         "<tr>"+
           "<th>Output do programa</th>"+
-          "<td>"+ resp.tests[test].outrecieved + "</td>"+
+          "<td>"+ resp.tests[test].outrecieved.replace(/\r?\n/g, "<br>") + "</td>"+
         "</tr>"+
         "<tr>"+
           "<th>Output esperado</th>"+
-          "<td>"+ resp.tests[test].outexpected + "</td>"+
+          "<td>"+ resp.tests[test].outexpected.replace(/\r?\n/g, "<br>") + "</td>"+
         "</tr>"
       ;
     }
