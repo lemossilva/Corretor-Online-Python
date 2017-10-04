@@ -126,7 +126,7 @@ function contests() {
         {name: "Duration", field: function(obj){
           var x = obj.duration;
           return (Math.floor(x/60/24)).toString() + "d "
-              + (Math.floor(x%(60*24))/60).toString() + "h "
+              + (Math.floor(x%(60*24)/60)).toString() + "h "
               + (x % 60).toString() + "min";
         }},
         {name: "Freeze", field: "freeze"},
@@ -337,6 +337,7 @@ function users() {
 
 function contest(id) {
   $.get("contest/"+id,null,function(resp) {
+    if(resp == null) return;
     var html =
       "<h2>Contest "+resp.id+" — "+resp.name+"</h2>"+
       "<div class=\"center inner-menu\">"+
