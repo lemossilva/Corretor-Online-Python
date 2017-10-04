@@ -148,7 +148,12 @@ route("/logout",[=](const vector<string>&) {
 route("/contest",[=](const vector<string>& args) {
   int cid;
   if (!read(args[0],cid)) { not_found(); return; }
-  json(Contest::get(cid,uid()));
+  JSON tmp = Contest::get(cid, uid());
+  string turma = User::get(uid())["turma"];
+  JSON tmp2 = tmp["start"][turma];
+  tmp["start"] = tmp2;
+  if(User::get(uid())("especial") && tmp("qnt_provas")) tmp["duration"] = 60 + int(tmp["duration"]);
+  json(tmp);
 },false,false,1);
 
 route("/contest/problems",[=](const vector<string>& args) {
