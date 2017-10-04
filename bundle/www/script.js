@@ -346,11 +346,37 @@ function contest(id) {
         "<a href=\"#\" onclick=\"contest_attempts("+id+")\">Attempts</a> "
     ;
     html +=
-        "<a href=\"#\" onclick=\"contest_scoreboard("+id+")\">Scoreboard</a>"+
       "</div>"+
       "<div id=\"c2\"></div>"
     ;
     $("#c1").html(html);
+    
+    var countDown = new Date(resp.start.year, resp.start.month-1, resp.start.day, resp.start.hour, resp.start.minute, 0, 0).getTime() + resp.duration * 60 * 1000;
+    setInterval(function(){
+        var now = new Date().getTime();
+
+        var dist = countDown - now;
+
+        if(dist < 0){
+            $("#timer").html("<b>Tempo expirado!</b>");
+        }
+        else{
+            var d = Math.floor(dist / (1000 * 60 * 60 * 24));
+            dist %= 1000 * 60 * 60 * 24;
+
+            var h = Math.floor(dist / (1000 * 60 * 60));
+            dist %= 1000 * 60 * 60;
+
+            var min = Math.floor(dist / (1000 * 60));
+            dist %= 1000 * 60;
+
+            var sec = Math.floor(dist / 1000);
+
+            $("#timer").html("<b>"+d + "d " + h + "h "+
+                min + "m " + sec + "s restantes</b>");
+        }
+    }, 1000);
+    
     contest_problems(id);
   })
 }
