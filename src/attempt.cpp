@@ -126,28 +126,17 @@ JSON page(
 	if(profile){
 		DB(attempts);
 		JSON tmp = attempts.retrieve();
-		for (auto& att : tmp.arr()) {
+		for (auto att : tmp.arr()) {
 			if (att("privileged")) continue;
-			int cid;
-			bool hasc = att("contest").read(cid);
-			if (contest) {
-				if (!hasc || cid != contest) continue;
-			}
-			int pid = att["problem"];
-			string aux = Problem::get_problem_name(pid);
-			if (aux == "") continue;
-			att["language"] = Language::settings(att)["name"];
-			att["problem"] = move(map<string,JSON>{
-					{"id"   , pid},
-					{"name" , aux}
-					});
+			att.erase("contest");
+			att.erase("contest_time");
 			att.erase("ip");
-			att.erase("time");
+			att.erase("language");
 			att.erase("memory");
-			if (att["status"] != "judged") {
-				if (scoreboard) continue;
-				att.erase("verdict");
-			}
+			att.erase("solved_tests");
+			att.erase("time");
+			att.erase("total_tests");
+			att.erase("when");
 			ans.push_back(move(att));
 		}
 	}

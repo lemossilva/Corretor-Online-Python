@@ -6,6 +6,7 @@
 #include "helper.hpp"
 #include "database.hpp"
 #include "attempt.hpp"
+#include "problem.hpp"
 
 using namespace std;
 
@@ -116,7 +117,7 @@ JSON profile(int id, int user, unsigned p, unsigned ps) {
       int(att["user"]) == id &&
       att["status"].str() == "judged" &&
       verdict_toi(att["verdict"]) == AC
-    ) ans0[att["problem"]["id"]] = att["problem"]["name"].str();
+    ) ans0[att["problem"]] = Problem::get_problem_name((int)att["problem"]);
   }
   if (!ps) {
     p = 0;
@@ -142,9 +143,9 @@ JSON page(int user, unsigned p, unsigned ps) {
   JSON atts = Attempt::page(user,0,0,0,false,true);
   for (auto& att : atts.arr()) {
     auto& us = info[att["user"]];
-    us.tried.insert(int(att["problem"]["id"]));
+    us.tried.insert(int(att["problem"]));
     if (att["status"].str() == "judged" && verdict_toi(att["verdict"]) == AC) {
-      us.solved.insert(int(att["problem"]["id"]));
+      us.solved.insert(int(att["problem"]));
     }
   }
   DB(users);
