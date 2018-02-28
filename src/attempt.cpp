@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 
+#define MAX_USERS 1000
 
 using namespace std;
 
@@ -25,7 +26,7 @@ static string source(const string& fn) {
   if (!fp) return "";
   int sz = fread(buf,1,1<<12,fp);
   buf[sz] = 0;
-  ans += buf;
+  ans = buf;
   fclose(fp);
   delete[] buf;
   if(ans == "") ans = " ";
@@ -33,6 +34,8 @@ static string source(const string& fn) {
 }
 
 namespace Attempt {
+
+static vector<int> att_user[MAX_USERS];
 
 void fix() {
   DB(attempts);
@@ -51,6 +54,10 @@ void fix() {
     doc.second["when"] = 60*int(doc.second["contest_time"])+Contest::begin(aux);
     return true;
   });
+  JSON atts = attempts.retrieve();
+  for(const auto &att : atts.arr()){
+  	att_user[att("user")].push_back(att("id"));
+  }
 }
 
 string create(JSON&& att, const vector<uint8_t>& src) {
@@ -64,6 +71,7 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   }
   // update db
   DB(attempts);
+  att_user[att("user")].push_back(att("id"));
   int id = attempts.create(att);
   // save file
   string fn = "attempts/"+tostr(id)+"/";
@@ -104,6 +112,8 @@ JSON get(int id, int user) {
   return ans;
 }
 
+
+
 JSON page(
   int user,
   unsigned p,
@@ -112,37 +122,62 @@ JSON page(
   bool scoreboard,
   bool profile
 ) {
-  DB(attempts);
-  JSON tmp = attempts.retrieve(), ans(vector<JSON>{}), aux;
-  for (auto& att : tmp.arr()) {
-    if (!scoreboard && !profile && int(att["user"]) != user) continue;
-    if ((scoreboard || profile) && att("privileged")) continue;
-    int cid;
-    bool hasc = att("contest").read(cid);
-    if (contest) {
-      if (!hasc || cid != contest) continue;
-    }
-    else if (hasc) {
-      //aux = Contest::get(cid,user);
-      //if (!aux || !aux("finished")) continue;
-    }
-    int pid = att["problem"];
-    string aux = Problem::get_problem_name(pid);
-    if (aux == "") continue;
-    att["language"] = Language::settings(att)["name"];
-    att["problem"] = move(map<string,JSON>{
-      {"id"   , pid},
-      {"name" , aux}
-    });
-    att.erase("ip");
-    att.erase("time");
-    att.erase("memory");
-    if (att["status"] != "judged") {
-      if (scoreboard) continue;
-      att.erase("verdict");
-    }
-    ans.push_back(move(att));
-  }
+  JSON ans(vector<JSON>{});
+	if(profile){
+		DB(attempts);
+		JSON tmp = attempts.retrieve();
+		for (auto& att : tmp.arr()) {
+			if (att("privileged")) continue;
+			int cid;
+			bool hasc = att("contest").read(cid);
+			if (contest) {
+				if (!hasc || cid != contest) continue;
+			}
+			int pid = att["problem"];
+			string aux = Problem::get_problem_name(pid);
+			if (aux == "") continue;
+			att["language"] = Language::settings(att)["name"];
+			att["problem"] = move(map<string,JSON>{
+					{"id"   , pid},
+					{"name" , aux}
+					});
+			att.erase("ip");
+			att.erase("time");
+			att.erase("memory");
+			if (att["status"] != "judged") {
+				if (scoreboard) continue;
+				att.erase("verdict");
+			}
+			ans.push_back(move(att));
+		}
+	}
+	else{
+		DB(attempts);
+		for (int attid : att_user[user]) {
+			auto att = attempts.retrieve(attid);
+			int cid;
+			bool hasc = att("contest").read(cid);
+			if (contest) {
+				if (!hasc || cid != contest) continue;
+			}
+			int pid = att["problem"];
+			string aux = Problem::get_problem_name(pid);
+			if (aux == "") continue;
+			att["language"] = Language::settings(att)["name"];
+			att["problem"] = move(map<string,JSON>{
+					{"id"   , pid},
+					{"name" , aux}
+					});
+			att.erase("ip");
+			att.erase("time");
+			att.erase("memory");
+			if (att["status"] != "judged") {
+				if (scoreboard) continue;
+				att.erase("verdict");
+			}
+			ans.push_back(move(att));
+		}
+	}
   if (!ps) {
     p = 0;
     ps = ans.size();
