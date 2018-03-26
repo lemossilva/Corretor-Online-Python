@@ -153,24 +153,6 @@ function set_control_alunos(){
 
 }
 
-function get_attempts_of_aluno(){
-    var user = $("#dropdown_alunos").val();
-    var contest = $("#dropdown_contests").val();
-
-    $.get("/attempt_user_contest/"+user+"/"+contest, null, function(atts){
-        if(!Array.isArray(atts)) return;
-
-        var str = "";
-
-        for(var i in atts)
-          str +=
-            "<button onclick=\"attempt_cases("+atts[i].id+")\">"+atts[i].id+"</button>"
-          ;
-
-        $("#c2").html(str);
-    });
-}
-
 function set_alunos(){
     var turma = $("#dropdown_turmas").val();
 
@@ -402,6 +384,12 @@ function get_attempts_of_aluno(){
 
         var str = "";
 
+		str += "<h3>";
+		str += $("#dropdown_alunos option:selected").html();
+		str += "'s submissions on ";
+		str += $("#dropdown_contests option:selected").html();
+		str += "</h3>";
+
         for(var i in atts)
           str +=
             "<button onclick=\"attempt_cases("+atts[i].id+")\">"+atts[i].id+"</button>"
@@ -413,6 +401,8 @@ function get_attempts_of_aluno(){
 
 function set_alunos(){
     var turma = $("#dropdown_turmas").val();
+
+	$("#c3").html(""), $("#c2").html("");
 
     if(!turma){
         $("#dropdown_alunos").html("");
