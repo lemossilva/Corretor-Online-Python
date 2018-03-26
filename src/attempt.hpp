@@ -14,10 +14,9 @@ JSON page(
   int user,
   unsigned page = 0,
   unsigned page_size = 0,
-  int contest = 0,
-  bool scoreboard = false,
-  bool profile = false
+  int contest = 0
 );
+JSON page_profile(int user);
 JSON getcases(int user, int id);
 JSON get_user_contest(int user, int user_id, int contest_id);
 } // namespace Attempt

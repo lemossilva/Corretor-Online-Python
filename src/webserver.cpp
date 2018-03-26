@@ -87,6 +87,19 @@ route("/contests/get_all",[=](const vector<string>& args) {
   json(Contest::get_all(uid()));
 });
 
+route("/contests/get_provas",[=](const vector<string>& args) {
+  json(Contest::get_provas(uid()));
+});
+
+route("/contest/get_users_turma_allowed",[=](const vector<string> &args){
+	if(args.size() != 2) return;
+	int cid;
+	string turma;
+	if(!read(args[0], cid)) return;
+	if(!read(args[1],turma)) return;
+	json(Contest::get_allowed_turma(cid, uid(),turma));
+});
+
 route("/get_all_turmas",[=](const vector<string>&args){
   json(User::get_turmas(uid()));
 });
@@ -155,6 +168,7 @@ route("/contest",[=](const vector<string>& args) {
     tmp["start"] = tmp2;
     if(User::get(uid())("especial") && tmp("qnt_provas"))
       tmp["duration"] = 60 + int(tmp["duration"]);
+	tmp["when"] = ::time(nullptr);
   }
   json(tmp);
 },false,false,1);
@@ -262,6 +276,31 @@ route("/change_pass",[=](const vector<string>&args){
 
 }, true, true);
 
+route("/allow_user", [=](const vector<string>& args){
+	auto &data = payload();
+	data.push_back(0);
+	JSON json;
+	json.parse(&data[0]);
+	if(!json("aluno") || !json("contest")){
+		response("ERROR, try reload");
+		return;
+	}
+	Contest::allow_user(json["contest"], json["aluno"], uid());
+	response("ok");
+},true,true);
+
+route("/disallow_user", [=](const vector<string>& args){
+	auto &data = payload();
+	data.push_back(0);
+	JSON json;
+	json.parse(&data[0]);
+	if(!json("aluno") || !json("contest")){
+		response("ERROR, try reload");
+		return;
+	}
+	Contest::disallow_user(json["contest"], json["aluno"], uid());
+	response("ok");
+},true,true);
 
 route("/register_user",[=](const vector<string>&args){
   if (!session()) { location("/"); return; }

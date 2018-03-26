@@ -64,6 +64,7 @@ void fix() {
       auto& a = doc.second["judges"].arr();
       sort(a.begin(),a.end(),std::less<int>());
     }
+	if (doc.second("qnt_provas")){ doc.second["allowed_users"]; }
     auto& ps = doc.second["problems"];
     if (!ps.isarr()) {
       // ps = JSON(vector<JSON>{});
@@ -88,6 +89,8 @@ void fix() {
         for(int id : aux["prova"][tostr(i)].arr())
           if(id == doc.first) return true;
       }
+      doc.second.erase("contest");
+	  return true;
     }
     else if(aux("problems"))
       for (int id : aux["problems"].arr()) if (id == doc.first) return true;
@@ -135,14 +138,61 @@ time_t end(const JSON& contest) {
   return begin(contest) + 60*time_t(contest("duration"));
 }
 
+void allow_user(int cid, int user, int tutor){
+  DB(contests);
+  DB(logs_allow);
+  JSON contest, tmp;
+  contests.retrieve(cid, contest);
+  contest["allowed_users"][to_string(user)] = true;;
+  tmp["tutor"] = tutor;
+  tmp["user"] = user;
+  tmp["contest"] = cid;
+  tmp["when"] = ::time(nullptr);
+  tmp["change_to"] = 1;
+  contests.update(cid, contest);
+  logs_allow.create(tmp);
+}
+
+bool is_user_allowed(int cid, int user){
+  DB(contests);
+  JSON contest;
+  if(!contests.retrieve(cid, contest)) return 0;
+  return bool(contest("allowed_users", to_string(user)));
+}
+
+void disallow_user(int cid, int user, int tutor){
+  DB(contests);
+  DB(logs_allow);
+  JSON contest, tmp;
+  contests.retrieve(cid, contest);
+  contest["allowed_users"].erase(to_string(user));
+  tmp["tutor"] = tutor;
+  tmp["user"] = user;
+  tmp["contest"] = cid;
+  tmp["when"] = ::time(nullptr);
+  tmp["change_to"] = 0;
+  contests.update(cid, contest);
+  logs_allow.create(tmp);
+}
+
+JSON get_allowed_turma(int cid, int user, const string &turma){
+	JSON ans = User::get_of_turma(user, turma);
+	for(JSON &tmp : ans.arr()){
+		tmp["can"] = is_user_allowed(cid, tmp("id"));
+	}
+	return ans;
+}
+
 bool allow_problem(const JSON& problem, int user) {
   int cid;
   if (!problem("contest").read(cid)) return true;
   DB(contests);
   JSON contest = contests.retrieve(cid);
+  if(contest("qnt_provas"))
+  	return is_user_allowed(cid, user);
   return
     isjudge(user,contest) ||
-    (time(contest, user).begin <= ::time(nullptr) && ::time(nullptr) < time(contest, user).end)
+    time(contest, user).begin <= ::time(nullptr)
   ;
 }
 
@@ -151,7 +201,9 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   if (!problem("contest").read(cid)) return true;
   DB(contests);
   JSON contest = contests.retrieve(cid);
-  if (contest("finished")) return true;
+  if(contest("qnt_provas")){
+  	return is_user_allowed(cid, attempt["user"]);
+  }
   if (isjudge(attempt["user"],contest)) {
     attempt["contest"] = cid;
     attempt["privileged"].settrue();
@@ -159,7 +211,7 @@ bool allow_create_attempt(JSON& attempt, const JSON& problem) {
   }
   auto t = time(contest,attempt["user"]);
   time_t when = attempt["when"];
-  if (t.begin <= when && when < t.end) {
+  if (t.begin <= when) {
     attempt["contest"] = cid;
     attempt["contest_time"] = int(roundl((when-t.begin)/60.0L));
     return true;
@@ -173,12 +225,16 @@ JSON get(int id, int user) {
 
   if(!contests.retrieve(id,ans)) return JSON::null();
 
+  if(ans("qnt_provas")){
+  	if(!is_user_allowed(id, user)) return JSON::null();
+	ans.erase("allowed_users");
+    ans["id"] = id;
+  	return ans;
+  }
+
   Time tmp = time(ans, user);
 
-  if (
-    (!isjudge(user,ans) && ::time(nullptr) < tmp.begin) ||
-    (!isjudge(user,ans) && ::time(nullptr) >= tmp.end)
-  ) {
+  if (!isjudge(user,ans) && ::time(nullptr) < tmp.begin) {
     return JSON::null();
   }
 
@@ -188,7 +244,13 @@ JSON get(int id, int user) {
 
 JSON get_problems(int id, int user) {
   JSON contest = get(id,user);
-  if (!contest) return contest;
+  if (!contest) return JSON::null();
+  Time tmp = time(contest, user);
+
+  if(::time(nullptr) < tmp.begin) return JSON::null();
+  if(contest("qnt_provas") && ::time(nullptr) > tmp.end)
+  	return JSON::null();
+  
   return list_problems(contest,user);
 }
 
@@ -233,12 +295,19 @@ JSON page(int user, unsigned p, unsigned ps) {
   JSON ans(vector<JSON>{});
   contests.retrieve_page(p,ps,[&](const Database::Document& contest) {
     JSON tmp = contest.second;
-    if (!tmp["start"].obj().count(turma)) return Database::null();
     tmp["id"] = contest.first;
+    if (!tmp["start"].obj().count(turma)) return Database::null();
     JSON tmp2 = tmp["start"][turma];
     tmp["start"] = tmp2;
     if(User::get(user)("especial") && tmp("qnt_provas")) tmp["duration"] = 60 + int(tmp["duration"]);
-    if(::time(nullptr) < end(tmp)) ans.push_back(move(tmp));
+    if(begin(tmp) <= ::time(nullptr)){
+		bool ok = 1;
+		if(tmp("qnt_provas")){
+			ok = tmp("allowed_users", to_string(user));
+			tmp.erase("allowed_users");
+		}
+		if(ok) ans.push_back(move(tmp));
+	}
     return Database::null();
   });
 
@@ -273,6 +342,34 @@ JSON get_all(int user){
     return ans;
 }
 
+JSON get_provas(int user){
+    JSON ans(vector<JSON>{});
+
+    if(!user) return ans;
+    string turma = User::get(user)["turma"];
+
+    if(turma != "Z") return ans;
+
+    DB(contests);
+
+    JSON conts = contests.retrieve();
+
+    for(JSON c : conts.arr()) if(c("qnt_provas")){
+        c.erase("blind");
+        c.erase("duration");
+        c.erase("freeze");
+        c.erase("problems");
+        c.erase("qnt_provas");
+        c.erase("prova");
+        c.erase("judges");
+        c.erase("finished");
+        c.erase("start");
+        ans.push_back(c);
+    }
+
+    return ans;
+}
+
 JSON notas(){
   DB(attempts);
   DB(contests);
@@ -283,6 +380,7 @@ JSON notas(){
 
   JSON user_problem;
   for(JSON att : atts.arr()){
+  	if(att("after_contest")) continue;
     string prob = att("problem");
     string user = att("user");
     if(!user_problem(user)) user_problem[user] = JSON();

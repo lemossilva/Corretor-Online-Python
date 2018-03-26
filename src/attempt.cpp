@@ -71,7 +71,9 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   }
   // update db
   DB(attempts);
+  DB(contests);
   att_user[att("user")].push_back(att("id"));
+  att["after_contest"] = Contest::time(contests.retrieve(int(att("contest"))), int(att("user"))).end < att("when");
   int id = attempts.create(att);
   // save file
   string fn = "attempts/"+tostr(id)+"/";
@@ -112,70 +114,69 @@ JSON get(int id, int user) {
   return ans;
 }
 
-
+JSON page_profile(int user){
+  JSON ans(vector<JSON>{});
+  DB(attempts);
+  JSON tmp = attempts.retrieve();
+  for (auto att : tmp.arr()) {
+    if (att("privileged")) continue;
+    att.erase("contest");
+    att.erase("contest_time");
+    att.erase("ip");
+    att.erase("language");
+    att.erase("memory");
+    att.erase("solved_tests");
+    att.erase("time");
+    att.erase("total_tests");
+    att.erase("when");
+    ans.push_back(move(att));
+  }
+  return ans;
+}
 
 JSON page(
   int user,
   unsigned p,
   unsigned ps,
-  int contest,
-  bool scoreboard,
-  bool profile
-) {
-  JSON ans(vector<JSON>{});
-	if(profile){
-		DB(attempts);
-		JSON tmp = attempts.retrieve();
-		for (auto att : tmp.arr()) {
-			if (att("privileged")) continue;
-			att.erase("contest");
-			att.erase("contest_time");
-			att.erase("ip");
-			att.erase("language");
-			att.erase("memory");
-			att.erase("solved_tests");
-			att.erase("time");
-			att.erase("total_tests");
-			att.erase("when");
-			ans.push_back(move(att));
+  int contest
+  ) {
+	JSON ans(vector<JSON>{});
+	DB(attempts);
+	DB(contests);
+	for (int attid : att_user[user]) {
+		auto att = attempts.retrieve(attid);
+		int cid;
+		bool hasc = att("contest").read(cid);
+		if (contest) {
+			if (!hasc || cid != contest) continue;
 		}
-	}
-	else{
-		DB(attempts);
-		for (int attid : att_user[user]) {
-			auto att = attempts.retrieve(attid);
-			int cid;
-			bool hasc = att("contest").read(cid);
-			if (contest) {
-				if (!hasc || cid != contest) continue;
-			}
-			int pid = att["problem"];
-			string aux = Problem::get_problem_name(pid);
-			if (aux == "") continue;
-			att["language"] = Language::settings(att)["name"];
-			att["problem"] = move(map<string,JSON>{
-					{"id"   , pid},
-					{"name" , aux}
-					});
-			att.erase("ip");
-			att.erase("time");
-			att.erase("memory");
-			if (att["status"] != "judged") {
-				if (scoreboard) continue;
-				att.erase("verdict");
-			}
-			ans.push_back(move(att));
+		if(contests.retrieve(cid)("qnt_provas"))
+			continue;
+		int pid = att["problem"];
+		string aux = Problem::get_problem_name(pid);
+		if (aux == "") continue;
+		att["language"] = Language::settings(att)["name"];
+		att["problem"] = move(map<string,JSON>{
+				{"id"   , pid},
+				{"name" , aux}
+				});
+		att.erase("ip");
+		att.erase("time");
+		att.erase("memory");
+		if (att["status"] != "judged") {
+			att.erase("verdict");
 		}
+		ans.push_back(move(att));
 	}
-  if (!ps) {
-    p = 0;
-    ps = ans.size();
-  }
-  auto& a = ans.arr();
-  unsigned r = (p+1)*ps;
-  if (r < a.size()) a.erase(a.begin()+r,a.end());
-  a.erase(a.begin(),a.begin()+(p*ps));
-  return ans;
+	if (!ps) {
+		p = 0;
+		ps = ans.size();
+	}
+	auto& a = ans.arr();
+	unsigned r = (p+1)*ps;
+	if (r < a.size()) a.erase(a.begin()+r,a.end());
+	a.erase(a.begin(),a.begin()+(p*ps));
+	return ans;
 }
 
 JSON get_user_contest(int user, int user_id, int contest_id){

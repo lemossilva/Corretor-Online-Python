@@ -38,6 +38,7 @@ function init() {
             "<li><a href=\"#\" onclick=\"tests()\">Admin quick</a></li>\n"+
             "<li><a href=\"#\" onclick=\"tests_complete()\">Admin</a></li>\n"+
             "<li><a href=\"#\" onclick=\"register()\">Cadastrar</a></li>\n"
+           +"<li><a href=\"#\" onclick=\"show_control()\">Controle de users</a></li>\n"
           ;
         }
         html +=
@@ -48,6 +49,145 @@ function init() {
     },
     async: false
   });
+}
+
+function show_control(){
+  $.get("contests/get_provas/", null, function(cont){
+    if(!Array.isArray(cont)) return;
+
+    $.get("get_all_turmas/", null, function(turmas){
+      if(!Array.isArray(turmas)) return;
+
+      var str = "";
+      str += "<h4 id=\"response\"></h4>"+
+             "<table>"+
+             "<tr>"+
+             "<td>Contest</td>"+
+             "<td>Turma</td>"+
+             "<td></td>"+
+             "</tr>"+
+             "<tr>"+
+             "<td>"+
+             "<select id=dropdown_contests onchange=set_control_alunos()>";
+      for(var i in cont){
+        str += "<option value="+cont[i].id+">"+cont[i].name+"</option>";
+      }
+      str += "</select>"+
+             "</td>"+
+             "<td>"+
+             "<select id=dropdown_turmas onchange=set_control_alunos()>"+
+             "<option value=> </option>";
+      for(var i in turmas){
+        str += "<option value="+turmas[i].name+">"+turmas[i].name+"</option>";
+      }
+      str += "</select>"+
+             "</table>"+
+             "<div id=\"c2\"></div>";
+
+      $("#c1").html(str);
+    });
+  });
+}
+
+function allow_user(user, cid){
+	$.post("allow_user", JSON.stringify({
+		aluno: user,
+		contest: cid
+	}), function(resp){
+		if(resp != "ok") $("#response").html(resp);
+	});
+}
+
+function disallow_user(user, cid){
+	$.post("disallow_user", JSON.stringify({
+		aluno: user,
+		contest: cid
+	}), function(resp){
+		if(resp != "ok") $("#response").html(resp);
+	});
+}
+
+function change_control(aluno, cid){
+	var campo = $("#text_label_"+aluno);
+	if(!campo || campo.length == 0) return;
+	if(campo.val() == 1){
+		disallow_user(aluno, cid);
+		campo.val(0);
+		campo.html("NAO pode fazer a prova");
+	}
+	else if(campo.val() == 0){
+		allow_user(aluno, cid);
+		campo.val(1);
+		campo.html("Pode fazer a prova");
+	}
+}
+
+function set_control_alunos(){
+    var turma = $("#dropdown_turmas").val();
+    var cid = $("#dropdown_contests").val();
+
+	var c = content();
+    if(!turma){
+		$(c).html("");
+        return;
+    }
+
+    $.get("contest/get_users_turma_allowed/"+cid+"/"+turma, null, function(alunos){
+      if(!Array.isArray(alunos)) return;
+      var str = "";
+	  	str += "<table border=1>";
+      for(var i in alunos){
+				str += "<tr>";
+        str += "<td>"+alunos[i].username+"</td>";
+				str += "<td><option value="+alunos[i].can+" id=text_label_"+alunos[i].id+">";
+				if(alunos[i].can) str += "Pode fazer a prova";
+				else str += "NAO pode fazer a prova";
+				str += "</option></td>";
+				str += "<td><button onclick=change_control("+alunos[i].id+","+cid+")>Change it</button></td>";
+				str += "</tr>";
+	  	}
+		str += "</table>";
+
+      $(c).html(str);
+    });
+
+}
+
+function get_attempts_of_aluno(){
+    var user = $("#dropdown_alunos").val();
+    var contest = $("#dropdown_contests").val();
+
+    $.get("/attempt_user_contest/"+user+"/"+contest, null, function(atts){
+        if(!Array.isArray(atts)) return;
+
+        var str = "";
+
+        for(var i in atts)
+          str +=
+            "<button onclick=\"attempt_cases("+atts[i].id+")\">"+atts[i].id+"</button>"
+          ;
+
+        $("#c2").html(str);
+    });
+}
+
+function set_alunos(){
+    var turma = $("#dropdown_turmas").val();
+
+    if(!turma){
+        $("#dropdown_alunos").html("");
+        return;
+    }
+
+    $.get("get_users_of_turma/"+turma, null, function(alunos){
+      if(!Array.isArray(alunos)) return;
+      var str = "";
+      
+      for(var i in alunos)
+        str += "<option value="+alunos[i].id+">"+alunos[i].username+"</option>";
+
+      $("#dropdown_alunos").html(str);
+    });
 }
 
 function isadmin(){
@@ -105,7 +245,7 @@ function contests() {
   $.get("attempts",null,function(atts) {
     setup_solved(atts);
     $.get("contests",null,function(resp) {
-      
+	  if(!Array.isArray(resp)) return;
       for (var i = 0; i < resp.length; i++){
         var obj = resp[i];
         var s = obj.start;
@@ -123,12 +263,7 @@ function contests() {
         {name: "Start", field: function(obj) {
           return new Date(obj.start).toString();
         }},
-        {name: "Duration", field: function(obj){
-          var x = obj.duration;
-          return (Math.floor(x/60/24)).toString() + "d "
-              + (Math.floor(x%(60*24)/60)).toString() + "h "
-              + (x % 60).toString() + "min";
-        }},
+        {name: "Duration", field: "duration"},
         {name: "Freeze", field: "freeze"},
         {name: "Blind", field: "blind"}
       ];
@@ -200,7 +335,7 @@ function tests(){
         "<h4 id=\"response\"></h4>"+
         "<table>" +
           "<tr>"+
-            "<td><input id=\"attid\" type=\"text\"></td>\n"+
+            "<td>Attempt id: <input id=\"attid\" type=\"text\"></td>\n"+
           "</tr>"+
           "<tr>"+
             "<td><button onclick=\"quick_attempt_cases()\">Send</button></td>";
@@ -335,12 +470,20 @@ function users() {
   });
 }
 
+function control_users(id){
+	$.get("control_user/"+id, null, function(resp){
+	});
+}
+
+var count_down_id = 0;
+
 function contest(id) {
+  if(count_down_id) clearInterval(count_down_id);
   $.get("contest/"+id,null,function(resp) {
-    if(resp == null) return;
     var html =
       "<h2>Contest "+resp.id+" — "+resp.name+"</h2>"+
       "<div class=\"center inner-menu\">"+
+      "<p id=\"timer\"></p>"+
         "<a href=\"#\" onclick=\"contest_problems("+id+")\">Problems</a> "
     ;
     if (username != "") html +=
@@ -351,14 +494,13 @@ function contest(id) {
       "<div id=\"c2\"></div>"
     ;
     $("#c1").html(html);
-    
-    var countDown = new Date(resp.start.year, resp.start.month-1, resp.start.day, resp.start.hour, resp.start.minute, 0, 0).getTime() + resp.duration * 60 * 1000;
-    setInterval(function(){
-        var now = new Date().getTime();
+    var countDown = new Date(resp.start.year, resp.start.month-1, resp.start.day, resp.start.hour, resp.start.minute, 0, 0).getTime() + (resp.duration * 60 - resp.when - 1) * 1000;
+    var mytime = new Date().getTime();
+	countDown += mytime;
+    count_down_id = setInterval(function(){
+		var dist = countDown - (new Date().getTime());
 
-        var dist = countDown - now;
-
-        if(dist < 0){
+        if(dist <= 0){
             $("#timer").html("<b>Tempo expirado!</b>");
         }
         else{
@@ -376,8 +518,7 @@ function contest(id) {
             $("#timer").html("<b>"+d + "d " + h + "h "+
                 min + "m " + sec + "s restantes</b>");
         }
-    }, 1000);
-    
+    }, 850);
     contest_problems(id);
   })
 }
@@ -386,6 +527,7 @@ function contest_problems(id) {
   $.get("contest/attempts/"+id,null,function(atts) {
     setup_solved(atts);
     $.get("contest/problems/"+id,null,function(resp) {
+	  if(resp == null) return;
       var tbl = $("<table id=\"contest-problems\"></table>");
       for (var i = 0; i < resp.length; i++) {
         var id = resp[i].id;
@@ -648,15 +790,15 @@ function attempt_cases(id) {
         "<table class=\"data\">"+
         "<tr>"+
           "<th>input</th>"+
-          "<td>"+ resp.tests[test].input.replace(/\r?\n/g, "<br>")+ "</td>" +
+          "<td>"+ resp.tests[test].input + "</td>"+
         "</tr>"+
         "<tr>"+
           "<th>Output do programa</th>"+
-          "<td>"+ resp.tests[test].outrecieved.replace(/\r?\n/g, "<br>") + "</td>"+
+          "<td>"+ resp.tests[test].outrecieved + "</td>"+
         "</tr>"+
         "<tr>"+
           "<th>Output esperado</th>"+
-          "<td>"+ resp.tests[test].outexpected.replace(/\r?\n/g, "<br>") + "</td>"+
+          "<td>"+ resp.tests[test].outexpected + "</td>"+
         "</tr>"
       ;
     }
@@ -964,7 +1106,7 @@ function verdict(att) {
 
   if("solved_tests" in att && "total_tests" in att){
     if(att.total_tests > 0)
-      percetage = " (solved " + 100*att.solved_tests/att.total_tests + "%)";
+      percetage = " (solved " + Math.floor(100*att.solved_tests/att.total_tests) + "%)";
   }
 
   switch (att.verdict) {

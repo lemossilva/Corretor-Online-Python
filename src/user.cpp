@@ -37,17 +37,17 @@ bool change_password(const int id, const std::string& oldpassword, const std::st
 }
 
 bool register_user(const int id, const std::string &name, const std::string& username, const std::string& turma, const std::string& pass){
-    if(isadmin(id).isfalse()) return false;
-    DB(users);
-    JSON user;
+	if(isadmin(id).isfalse()) return false;
+	DB(users);
+	JSON user;
 
-    user["name"] = name;
-    user["username"] = username;
-    user["turma"] = turma;
-    user["password"] = pass;
-     
-    users.create(user);
-    return true;
+	user["name"] = name;
+	user["username"] = username;
+	user["turma"] = turma;
+	user["password"] = pass;
+
+	users.create(user);
+	return true;
 }
 
 JSON get(int id) {
@@ -111,7 +111,7 @@ JSON profile(int id, int user, unsigned p, unsigned ps) {
   JSON tmp = get(id);
   if (!tmp) return tmp;
   cmap<int,string> ans0;
-  JSON atts = Attempt::page(user,0,0,0,false,true);
+  JSON atts = Attempt::page_profile(user);
   for (auto& att : atts.arr()) {
     if (
       int(att["user"]) == id &&
@@ -140,7 +140,7 @@ JSON page(int user, unsigned p, unsigned ps) {
     set<int> solved, tried;
   };
   map<int,stats> info;
-  JSON atts = Attempt::page(user,0,0,0,false,true);
+  JSON atts = Attempt::page_profile(user);
   for (auto& att : atts.arr()) {
     auto& us = info[att["user"]];
     us.tried.insert(int(att["problem"]));
