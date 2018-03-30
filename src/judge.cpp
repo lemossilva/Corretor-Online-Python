@@ -97,6 +97,8 @@ static void judge(int attid) {
     if (WEXITSTATUS(status)) {
       att["status"] = "judged"; // CE needs no judgement by humans
       att["verdict"] = verdict_tos(CE);
+      att["solved_tests"] = move(tostr(0));
+      att["total_tests"] = move(tostr(1));
       attempts.update(attid,move(att));
       return;
     }

@@ -72,9 +72,9 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   // update db
   DB(attempts);
   DB(contests);
-  att_user[att("user")].push_back(att("id"));
   att["after_contest"] = Contest::time(contests.retrieve(int(att("contest"))), int(att("user"))).end < att("when");
   int id = attempts.create(att);
+  att_user[att("user")].push_back(id);
   // save file
   string fn = "attempts/"+tostr(id)+"/";
   system("mkdir -p %soutput",fn.c_str());
@@ -143,15 +143,17 @@ JSON page(
 	JSON ans(vector<JSON>{});
 	DB(attempts);
 	DB(contests);
+	JSON att;
 	for (int attid : att_user[user]) {
-		auto att = attempts.retrieve(attid);
+		if(!attempts.retrieve(attid, att)) continue;
+		att["id"] = attid;
 		int cid;
 		bool hasc = att("contest").read(cid);
 		if (contest) {
 			if (!hasc || cid != contest) continue;
 		}
-		if(contests.retrieve(cid)("qnt_provas"))
-			continue;
+		JSON meucontest = contests.retrieve(cid);
+		if(meucontest("qnt_provas")) continue;
 		int pid = att["problem"];
 		string aux = Problem::get_problem_name(pid);
 		if (aux == "") continue;
@@ -235,12 +237,6 @@ JSON getcases(int user, int id){
   ans.erase("memory");
 
   if (ans["status"] != "judged") ans.erase("verdict");
-
-  ans["source"] = source("attempts/"+tostr(id)+"/"+tostr(pid)+ext);
-  ans.erase("ip");
-  ans.erase("time");
-  ans.erase("memory");
-
 
   ans["tests"] = JSON(vector<JSON>());
   string path = "attempts/"+tostr(id);
