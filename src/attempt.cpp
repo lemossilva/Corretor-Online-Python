@@ -72,7 +72,7 @@ string create(JSON&& att, const vector<uint8_t>& src) {
   // update db
   DB(attempts);
   DB(contests);
-  att["after_contest"] = Contest::time(contests.retrieve(int(att("contest"))), int(att("user"))).end < att("when");
+  att["after_contest"] = Contest::time(contests.retrieve(int(att("contest"))), int(att("user"))).end >= att("when");
   int id = attempts.create(att);
   att_user[att("user")].push_back(id);
   // save file
@@ -153,7 +153,10 @@ JSON page(
 			if (!hasc || cid != contest) continue;
 		}
 		JSON meucontest = contests.retrieve(cid);
-		if(meucontest("qnt_provas")) continue;
+		if(meucontest("qnt_provas")){
+            if(!Contest::is_user_allowed(cid, user))
+                continue;
+        }
 		int pid = att["problem"];
 		string aux = Problem::get_problem_name(pid);
 		if (aux == "") continue;

@@ -19,6 +19,7 @@ time_t blind(const JSON& contest);
 bool allow_problem(const JSON& problem, int user);
 bool allow_create_attempt(JSON& attempt, const JSON& problem);
 
+bool is_user_allowed(int cid, int user);
 void disallow_user(int cid, int user, int tutor);
 void allow_user(int cid, int user, int tutor);
 
