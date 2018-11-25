@@ -21,9 +21,9 @@ using namespace std;
 
 static string source(const string& fn) {
   string ans;
-  char* buf = new char[(1<<12)+1];
   FILE* fp = fopen(fn.c_str(),"rb");
   if (!fp) return "";
+  char* buf = new char[(1<<12)+1];
   int sz = fread(buf,1,1<<12,fp);
   buf[sz] = 0;
   ans = buf;
